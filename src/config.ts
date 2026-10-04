@@ -4,6 +4,7 @@ import { dirname, extname, join, resolve } from "node:path";
 import { createJiti } from "jiti";
 import type { Browser, BrowserContext, BrowserContextOptions, LaunchOptions, Page } from "playwright";
 
+import type { Judge } from "./judge/types.js";
 import type { LlmProvider } from "./llm/types.js";
 import type { RunResult, ScenarioResult, StepResult } from "./report/types.js";
 import { ConfigError } from "./runtime/errors.js";
@@ -86,6 +87,11 @@ export interface PlanwrightConfig {
   judge?: {
     /** Minimum confidence for an LLM verdict to pass. Default 0.7. */
     minConfidence?: number;
+    /**
+     * Who decides semantic `Then` steps stored as `judge`. Default: the LLM.
+     * E.g. layaJudge() from "planwright/judge/laya" for a local decision model.
+     */
+    using?: Judge;
   };
   /** Optional run-wide token budget (input + output). Exceeding it aborts the run with exit code 3. */
   budget?: { maxTokens?: number };
@@ -100,6 +106,7 @@ export interface ResolvedConfig {
   features: string[];
   baseURL?: string;
   llm?: LlmProvider;
+  judge?: Judge;
   headless: boolean;
   launchOptions: LaunchOptions;
   contextOptions: BrowserContextOptions;
@@ -147,6 +154,7 @@ export function resolveConfig(config: PlanwrightConfig, rootDir: string): Resolv
     features,
     baseURL: config.baseURL,
     llm: config.llm,
+    judge: config.judge?.using,
     headless: config.browser?.headless ?? true,
     launchOptions: config.browser?.launchOptions ?? {},
     contextOptions: config.browser?.contextOptions ?? {},

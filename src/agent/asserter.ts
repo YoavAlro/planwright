@@ -7,13 +7,10 @@ import { DriftError } from "../runtime/errors.js";
 import { buildLocator, describeLocator, recordTarget } from "../runtime/locators.js";
 import { capturePageState, type PageState } from "../runtime/page-state.js";
 import { ASSERTER_SYSTEM, ASSERT_TOOL, JUDGE_SYSTEM, JUDGE_TOOL, renderPageState } from "./prompts.js";
+import type { Judge, Verdict } from "../judge/types.js";
 import type { LlmSession } from "./session.js";
 
-export interface Verdict {
-  pass: boolean;
-  confidence: number;
-  evidence: string;
-}
+export type { Verdict } from "../judge/types.js";
 
 /** One single-literal `kind` per member, so `meta.kind` checks narrow cleanly in user code. */
 export type AssertRequestMeta =
@@ -38,6 +35,8 @@ export interface AssertInput {
   minConfidence: number;
   baseURL?: string;
   fixturesDir: string;
+  /** Custom judge for `judge` steps; the LLM judges when unset. */
+  judge?: Judge;
 }
 
 function readVerdict(input: Record<string, unknown> | undefined, text: string | undefined): Verdict {
@@ -146,6 +145,10 @@ function userContent(goal: string, state: PageState) {
 
 /** Judges the assertion with the LLM. Used for `judge` plans and as the fallback when checks drift. */
 export async function judge(input: AssertInput): Promise<Verdict> {
+  if (input.judge) {
+    const state = await capturePageState(input.page, { screenshot: false, testIdAttribute: input.testIdAttribute });
+    return input.judge.judge({ assertion: input.goal, state });
+  }
   const state = await capturePageState(input.page, { screenshot: true, testIdAttribute: input.testIdAttribute });
   const meta: AssertRequestMeta = { kind: "judge", goal: input.goal, state };
   const response = await input.session.complete({

@@ -16,6 +16,9 @@ export type { RunOptions } from "./runner.js";
 export { anthropic, AnthropicProvider, DEFAULT_ANTHROPIC_MODEL } from "./llm/anthropic.js";
 export type { AnthropicProviderOptions } from "./llm/anthropic.js";
 export { ScriptedProvider } from "./llm/scripted.js";
+export { systemOneJudge, defaultJudgeState } from "./judge/system-one.js";
+export type { SystemOneClient, SystemOneJudgeOptions } from "./judge/system-one.js";
+export type { Judge, JudgeInput, Verdict } from "./judge/types.js";
 export type { ScriptedHandler, ScriptedRequestMeta } from "./llm/scripted.js";
 export type { LlmProvider, LlmRequest, LlmResponse, LlmTool, LlmToolCall, LlmContentPart, LlmUsage } from "./llm/types.js";
 

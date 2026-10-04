@@ -9,7 +9,7 @@ const MODE_LABEL: Record<StepResult["mode"], string> = {
   replayed: "replayed",
   planned: "planned (LLM)",
   healed: "HEALED (LLM)",
-  judged: "judged (LLM)",
+  judged: "judged",
   skipped: "skipped",
 };
 

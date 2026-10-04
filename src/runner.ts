@@ -159,6 +159,7 @@ export async function run(options: RunOptions): Promise<RunResult> {
     result.exitCode = 3;
   }
   await browser?.close().catch(() => undefined);
+  await config.judge?.close?.().catch(() => undefined);
   writeReports(config, result);
   consoleReporter.runEnd(result, { ci: !!options.ci, allowDrift: !!options.allowDrift, outputDir: config.outputDir });
   for (const r of config.reporters) await r.onRunEnd?.(result);
@@ -412,6 +413,7 @@ async function runPlannedStep(input: PlannedStepInput): Promise<StepOutcome> {
       minConfidence: config.minConfidence,
       baseURL: config.baseURL,
       fixturesDir: config.fixturesDir,
+      ...(config.judge ? { judge: config.judge } : {}),
     };
     if (usable) {
       if (usable.actions.length === 1 && usable.actions[0]?.type === "judge") {

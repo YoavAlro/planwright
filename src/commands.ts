@@ -40,6 +40,7 @@ export async function doctor(config: ResolvedConfig, write: Write, configPath: s
     bad(`LLM (${llm.name}/${llm.model}): ${problem}`, fix ?? "configure the provider's credentials");
   }
   else ok(`LLM: ${llm.name}/${llm.model}`);
+  ok(`judge: ${config.judge ? config.judge.name : "LLM"}`);
 
   try {
     const browser = await chromium.launch({ headless: true, ...config.launchOptions });

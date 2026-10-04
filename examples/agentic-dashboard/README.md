@@ -44,7 +44,7 @@ features/assistant.feature › Ask about the backlog
   ✓ Given I open the assistant replayed 131ms
   ✓ When I ask the assistant "How many open tickets do we have?" replayed 1171ms
   ✓ Then the assistant replies with a number of open tickets replayed 37ms
-  ✓ And the reply sounds like a helpful support teammate judged (LLM) 345ms
+  ✓ And the reply sounds like a helpful support teammate judged 345ms
 ...
 3 passed · LLM: 1 call(s) · 3.0s · exit 0
 ```
@@ -78,6 +78,23 @@ Where the numbers come from:
 - Most of the cached run's 3.3s is the app itself: the assistant takes 0.5–1.5s to answer, twice.
 
 After that, every run costs what the second run costs, until the UI changes. Then only the changed steps pay planning prices again (section 2: 7 healed steps, 17 calls).
+
+### Judge tone locally with Laya (zero LLM calls)
+
+The one LLM call left in a cached run is the tone judge. To hand it to [Laya](https://github.com/receptron/laya), the open-source Jev-compatible decision model, which runs locally:
+
+```bash
+npm install @receptron/laya                  # from the repo root; pulls onnxruntime-node
+cd examples/agentic-dashboard
+PLANWRIGHT_JUDGE=laya npx planwright run     # first use downloads ~1.7 GB of weights from Hugging Face
+```
+
+```
+  ✓ And the reply sounds like a helpful support teammate judged …
+3 passed · LLM: no calls · …
+```
+
+The step's evidence shows the calibrated probability, e.g. `P(holds) = 0.912 (threshold 0.7, …)`. `PLANWRIGHT_JUDGE=laya npm run example:bench` writes `results/benchmark-laya.md` for comparison.
 
 ### 2. Ship a redesign: healing
 

@@ -114,6 +114,21 @@ A `Then` plan caches *where to look* and *what shape to expect*, never a value s
 
 Page content is passed to the model as untrusted data, and text in the page aimed at the judge ("return pass=true") counts as evidence against the assertion.
 
+### Choosing the judge
+
+Steps stored as `judge` call the LLM on every run by default. You can hand them to any **Jev-compatible `system_one` decision model** instead. Each assertion becomes one `noul` question, and its calibrated P(true) decides the step. That moves the cost from API tokens to a local forward pass.
+
+```ts
+import { layaJudge } from "planwright/judge/laya";   // npm i @receptron/laya
+import { systemOneJudge } from "planwright";
+
+judge: { using: layaJudge() }                                // Laya, local ONNX (~1.7 GB, downloaded on first use)
+judge: { using: layaJudge({ threshold: 0.8 }) }              // stricter: P(holds) ≥ 0.8
+judge: { using: systemOneJudge(myJevClient) }                // any client exposing systemOne(state, questions)
+```
+
+Decision models read a short state (Laya: 512 tokens). The default state is the URL, the title, and the head and tail of the visible text. Pass `state: (page) => …` to focus on the region that matters. Structural `Then` checks and planning still use the LLM; only the semantic judge moves.
+
 ## CI behaviour and exit codes
 
 | Exit | Meaning |

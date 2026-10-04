@@ -20,6 +20,12 @@
     "paths": {
       "planwright": [
         "./src/index.ts"
+      ],
+      "planwright/judge/laya": [
+        "./src/judge/laya.ts"
+      ],
+      "planwright/llm/*": [
+        "./src/llm/*.ts"
       ]
     },
     "noEmit": true,

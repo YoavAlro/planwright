@@ -38,7 +38,11 @@
       "types": "./dist/llm/google.d.ts",
       "import": "./dist/llm/google.js"
     },
-    "./schema/plan.schema.json": "./schema/plan.schema.json"
+    "./schema/plan.schema.json": "./schema/plan.schema.json",
+    "./judge/laya": {
+      "types": "./dist/judge/laya.d.ts",
+      "import": "./dist/judge/laya.js"
+    }
   },
   "files": [
     "dist",
@@ -67,13 +71,17 @@
   "peerDependencies": {
     "@google/genai": ">=1.0.0",
     "openai": ">=5.0.0",
-    "playwright": ">=1.45.0"
+    "playwright": ">=1.45.0",
+    "@receptron/laya": ">=0.1.0"
   },
   "peerDependenciesMeta": {
     "@google/genai": {
       "optional": true
     },
     "openai": {
+      "optional": true
+    },
+    "@receptron/laya": {
       "optional": true
     }
   },
