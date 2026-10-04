@@ -6,10 +6,31 @@ export type ScriptedRequestMeta = PlanRequestMeta | AssertRequestMeta;
 
 export type ScriptedHandler = (meta: ScriptedRequestMeta, request: LlmRequest) => LlmToolCall | undefined;
 
+/** Viewport screenshots are 1280×720; image tokens ≈ width × height / 750. */
+const IMAGE_TOKENS = Math.round((1280 * 720) / 750);
+
+/**
+ * What the same request would roughly cost a real model: text ≈ 4 chars per
+ * token, one screenshot ≈ 1.2k tokens. Output counts the tool call only (no
+ * reasoning tokens), so real output usage is higher.
+ */
+function estimateUsage(request: LlmRequest, toolCall: LlmToolCall | undefined) {
+  const chars =
+    request.system.length +
+    JSON.stringify(request.tools).length +
+    request.content.reduce((n, c) => n + (c.type === "text" ? c.text.length : 0), 0);
+  const images = request.content.filter((c) => c.type === "image").length;
+  return {
+    inputTokens: Math.round(chars / 4) + images * IMAGE_TOKENS,
+    outputTokens: Math.round(JSON.stringify(toolCall ?? "").length / 4),
+  };
+}
+
 /**
  * Deterministic test double for LlmProvider. The handler receives the
  * structured request context (goal, page elements, history) and returns the
- * tool call the "model" makes. Records every call for assertions.
+ * tool call the "model" makes. Records every call for assertions and reports
+ * estimated token usage (see estimateUsage).
  */
 export class ScriptedProvider implements LlmProvider {
   readonly name = "scripted";
@@ -24,7 +45,7 @@ export class ScriptedProvider implements LlmProvider {
     const meta = request.meta as ScriptedRequestMeta;
     this.calls.push({ purpose: request.purpose, goal: meta.goal });
     const toolCall = this.handler(meta, request);
-    return { ...(toolCall ? { toolCall } : { text: "(no tool call)" }), usage: { inputTokens: 100, outputTokens: 10 } };
+    return { ...(toolCall ? { toolCall } : { text: "(no tool call)" }), usage: estimateUsage(request, toolCall) };
   }
 
   callsFor(goalSubstring: string): number {
