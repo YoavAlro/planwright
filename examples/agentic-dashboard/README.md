@@ -2,6 +2,11 @@
 
 A small but realistic app to watch planwright work: a support dashboard whose numbers change on every load, and an AI assistant whose answers are worded differently every time. It shows the full lifecycle: plan → replay → heal after a redesign → fail on a real outage.
 
+| v1 | v2 redesign |
+|---|---|
+| ![v1 dashboard](results/screenshots/v1-dashboard.png) | ![v2 dashboard](results/screenshots/v2-dashboard.png) |
+| ![v1 assistant](results/screenshots/v1-chat.png) | ![v2 assistant](results/screenshots/v2-chat.png) |
+
 ```
 examples/agentic-dashboard/
   app/server.ts            the app (no dependencies; the assistant is a scripted fake, no API key needed)
@@ -9,6 +14,8 @@ examples/agentic-dashboard/
   features/*.plan.json     committed plans, what planwright replays
   planwright.config.ts     starts the app in beforeAll, picks the LLM
   offline-brain.ts         offline stand-in for the LLM (used when ANTHROPIC_API_KEY is unset)
+  bench.ts                 first run vs cached run vs redesign benchmark (npm run example:bench)
+  results/                 committed benchmark output and screenshots
 ```
 
 ## Run it
@@ -54,21 +61,21 @@ Every step replays from the plan. The one LLM call is the **tone** assertion: "s
 
 ### First run vs cached run
 
-Measured on this example (13 steps, 3 scenarios). The first run starts with no plans; the second replays them:
+Measured on this example (13 steps, 3 scenarios) with `npm run example:bench`. Full output: [`results/benchmark.md`](results/benchmark.md) ([JSON](results/benchmark.json)).
 
-| | First run (planning) | Second run (cached plans) |
-|---|---|---|
-| LLM calls | 25 (18 planning turns, 7 assertion compiles) | **1** (the tone judge) |
-| Input tokens | ~64,000 | **~1,700** |
-| Browser time | 9.1s | **3.4s** |
-| Steps using the LLM | 13 of 13 | 1 of 13 |
+| Run | Steps using the LLM | LLM calls | Input tokens | Browser time |
+|---|---|---|---|---|
+| First run (no plans) | 13 of 13 | 25 | ~63,900 | 8.4s |
+| **Cached run** | **1 of 13** | **1** | **~1,700** | **3.3s** |
+| After the v2 redesign (heal) | 8 of 13 | 17 | ~43,600 | 46.4s |
+| Cached run on v2 | 1 of 13 | 1 | ~1,700 | 3.3s |
 
 Where the numbers come from:
 
 - **Tokens** are estimated from the actual requests (≈4 characters per token, ≈1.2k tokens per 1280×720 screenshot). Every planning turn sends the element list, page text and a screenshot, so a turn costs ~2.5k input tokens. The offline brain reports these estimates. With a real provider, the usage the API returns is what's reported.
 - **Browser time** leaves out model latency, because the offline brain answers instantly. With a real model, add roughly 25 × per-call latency to the first run (minutes) and 1 × to the second (seconds).
 - **Cost at Claude Opus 5.5 rates ($4 / $20 per MTok):** the first run is about $0.25 of input plus output that depends on reasoning length. A cached run is under $0.02, almost all of it the tone judge. Drop or rephrase that one semantic `Then` and a cached run makes zero LLM calls.
-- Most of the cached run's 3.4s is the app itself: the assistant takes 0.5–1.5s to answer, twice.
+- Most of the cached run's 3.3s is the app itself: the assistant takes 0.5–1.5s to answer, twice.
 
 After that, every run costs what the second run costs, until the UI changes. Then only the changed steps pay planning prices again (section 2: 7 healed steps, 17 calls).
 

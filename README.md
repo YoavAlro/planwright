@@ -34,6 +34,7 @@ features/tasks.feature › Add a task
 
 - [Quickstart](#quickstart)
 - [Example: agentic dashboard](examples/agentic-dashboard/README.md)
+- [Results](#results)
 - [How it works](#how-it-works)
 - [Assertions (`Then`)](#assertions-then)
 - [CI behaviour and exit codes](#ci-behaviour-and-exit-codes)
@@ -72,6 +73,19 @@ git add features/*.plan.json
 ```
 
 **See it end to end:** [`examples/agentic-dashboard`](examples/agentic-dashboard/README.md) is a support dashboard with an AI assistant. Numbers change on every load and answers are worded differently every time. `npm run example` replays its committed plans; `APP_UI=v2` ships a redesign and watches it heal; `APP_SLOW=1` hangs the backend and watches it fail as infra. No API key needed (an offline stand-in brain is used when `ANTHROPIC_API_KEY` is unset).
+
+## Results
+
+From [`examples/agentic-dashboard`](examples/agentic-dashboard/README.md), a support dashboard with an AI assistant (13 steps, 3 scenarios). Reproduce with `npm run example:bench`:
+
+| Run | Steps using the LLM | LLM calls | Input tokens | Browser time |
+|---|---|---|---|---|
+| First run (no plans) | 13 of 13 | 25 | ~63,900 | 8.4s |
+| **Cached run** | **1 of 13** | **1** | **~1,700** | **3.3s** |
+| After a UI redesign (heal) | 8 of 13 | 17 | ~43,600 | 46.4s |
+| Cached run after the redesign | 1 of 13 | 1 | ~1,700 | 3.3s |
+
+The one call left in a cached run is a deliberately semantic assertion ("the reply sounds like a helpful support teammate"), judged by the LLM every time. These numbers come from the example's offline brain: input tokens are estimated from the actual request sizes, and browser time excludes model latency. With `ANTHROPIC_API_KEY` set, the benchmark reports the API's real usage and latency. Details: [`results/benchmark.md`](examples/agentic-dashboard/results/benchmark.md).
 
 ## How it works
 

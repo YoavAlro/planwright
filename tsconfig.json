@@ -21,7 +21,9 @@
       "planwright": [
         "./src/index.ts"
       ]
-    }
+    },
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   },
   "include": [
     "src",

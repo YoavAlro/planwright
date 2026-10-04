@@ -1,0 +1,61 @@
+{
+  "llm": "offline-estimate",
+  "rows": [
+    {
+      "label": "First run (no plans)",
+      "exitCode": 0,
+      "wallMs": 8351,
+      "calls": 25,
+      "inputTokens": 63860,
+      "outputTokens": 565,
+      "steps": 13,
+      "llmSteps": 13,
+      "modes": {
+        "planned": 13
+      }
+    },
+    {
+      "label": "Cached run",
+      "exitCode": 0,
+      "wallMs": 3323,
+      "calls": 1,
+      "inputTokens": 1655,
+      "outputTokens": 26,
+      "steps": 13,
+      "llmSteps": 1,
+      "modes": {
+        "replayed": 12,
+        "judged": 1
+      }
+    },
+    {
+      "label": "After v2 redesign (heal)",
+      "exitCode": 0,
+      "wallMs": 46430,
+      "calls": 17,
+      "inputTokens": 43608,
+      "outputTokens": 319,
+      "steps": 13,
+      "llmSteps": 8,
+      "modes": {
+        "healed": 7,
+        "replayed": 5,
+        "judged": 1
+      }
+    },
+    {
+      "label": "Cached run on v2",
+      "exitCode": 0,
+      "wallMs": 3295,
+      "calls": 1,
+      "inputTokens": 1674,
+      "outputTokens": 26,
+      "steps": 13,
+      "llmSteps": 1,
+      "modes": {
+        "replayed": 12,
+        "judged": 1
+      }
+    }
+  ]
+}
