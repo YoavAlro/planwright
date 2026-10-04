@@ -52,7 +52,7 @@ const STYLE = `
   :root { --bg:#f6f7fb; --card:#fff; --ink:#1d2433; --muted:#667085; --brand:#4f46e5; --line:#e4e7ec; }
   * { box-sizing: border-box; } body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--ink); }
   header { display:flex; gap:1.5rem; align-items:center; padding:1rem 2rem; background:var(--card); border-bottom:1px solid var(--line); }
-  header strong { margin-right:auto; } header a { color:var(--brand); text-decoration:none; font-weight:600; }
+  header strong { margin-right:auto; } header a { color:var(--brand); text-decoration:none; font-weight:600; margin-left:1.25rem; }
   main { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
   .kpis { display:grid; grid-template-columns: repeat(3, 1fr); gap:1rem; }
   .kpi { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:1rem; }
