@@ -15,11 +15,10 @@ export interface Verdict {
   evidence: string;
 }
 
-export interface AssertRequestMeta {
-  kind: "assert" | "judge";
-  goal: string;
-  state: PageState;
-}
+/** One single-literal `kind` per member, so `meta.kind` checks narrow cleanly in user code. */
+export type AssertRequestMeta =
+  | { kind: "assert"; goal: string; state: PageState }
+  | { kind: "judge"; goal: string; state: PageState };
 
 interface ProposedCheck {
   kind?: string;

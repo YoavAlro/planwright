@@ -1,0 +1,112 @@
+{
+  "$schema": "https://raw.githubusercontent.com/YoavAlro/planwright/main/schema/plan.schema.json",
+  "version": 1,
+  "feature": "dashboard.feature",
+  "scenarios": {
+    "KPIs and recent tickets are visible": {
+      "name": "KPIs and recent tickets are visible",
+      "steps": [
+        {
+          "keyword": "Given",
+          "text": "I am on the dashboard",
+          "hash": "07ff4d2445733e09",
+          "source": "planned",
+          "generatedBy": {
+            "model": "offline-demo-brain",
+            "provider": "scripted"
+          },
+          "actions": [
+            {
+              "type": "navigate",
+              "url": "/"
+            }
+          ]
+        },
+        {
+          "keyword": "Then",
+          "text": "I see the open tickets KPI with a number",
+          "hash": "c2ef493482c63e10",
+          "source": "planned",
+          "generatedBy": {
+            "model": "offline-demo-brain",
+            "provider": "scripted"
+          },
+          "actions": [
+            {
+              "type": "assert",
+              "check": {
+                "kind": "text",
+                "pattern": "Open tickets \\d+",
+                "target": {
+                  "description": "kpi-open-tickets",
+                  "locators": [
+                    {
+                      "by": "testid",
+                      "value": "kpi-open-tickets"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "keyword": "And",
+          "text": "I see customer satisfaction as a percentage",
+          "hash": "1bc543ebbf662027",
+          "source": "planned",
+          "generatedBy": {
+            "model": "offline-demo-brain",
+            "provider": "scripted"
+          },
+          "actions": [
+            {
+              "type": "assert",
+              "check": {
+                "kind": "text",
+                "pattern": "\\d+%",
+                "target": {
+                  "description": "kpi-csat",
+                  "locators": [
+                    {
+                      "by": "testid",
+                      "value": "kpi-csat"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "keyword": "And",
+          "text": "the recent tickets table lists at least one ticket",
+          "hash": "0964ee8ca8220d55",
+          "source": "planned",
+          "generatedBy": {
+            "model": "offline-demo-brain",
+            "provider": "scripted"
+          },
+          "actions": [
+            {
+              "type": "assert",
+              "check": {
+                "kind": "count",
+                "min": 1,
+                "target": {
+                  "description": "css=\"#recent-tickets tbody tr\"",
+                  "locators": [
+                    {
+                      "by": "css",
+                      "value": "#recent-tickets tbody tr"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

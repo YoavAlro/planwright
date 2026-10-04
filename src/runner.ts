@@ -316,6 +316,8 @@ interface PlannedStepInput extends ScenarioRunInput {
   serverError: () => string | undefined;
 }
 
+const RETRY_TIMEOUT_MS = 1_000;
+
 async function replay(
   actionCtx: ActionContext,
   actions: Action[],
@@ -323,19 +325,20 @@ async function replay(
 ): Promise<{ ok: true } | { ok: false; failedAt: number; error: DriftError }> {
   for (const [i, action] of actions.entries()) {
     for (let attempt = 1; ; attempt++) {
+      // The first attempt gets the full wait (slow renders); retries only re-check briefly.
+      const ctx = attempt === 1 ? actionCtx : { ...actionCtx, actionTimeoutMs: Math.min(actionCtx.actionTimeoutMs, RETRY_TIMEOUT_MS) };
       try {
-        if (action.type === "assert") await runCheck(actionCtx, action.check);
-        else await executeAction(actionCtx, action);
+        if (action.type === "assert") await runCheck(ctx, action.check);
+        else await executeAction(ctx, action);
         break;
       } catch (err) {
         if (!(err instanceof DriftError)) throw err;
-        if (attempt >= attempts) {
-          // A spinner that never went away is a slow backend, not a changed page.
-          if (action.type === "waitFor" && action.state === "hidden") {
-            throw new InfraError(`Known-slow wait timed out: ${err.message}`);
-          }
-          return { ok: false, failedAt: i, error: err };
+        // A spinner that never went away is a slow backend, not a changed page. The wait
+        // already used its own (long) timeout, so retrying would only multiply it.
+        if (action.type === "waitFor" && action.state === "hidden") {
+          throw new InfraError(`Known-slow wait timed out: ${err.message}`);
         }
+        if (attempt >= attempts) return { ok: false, failedAt: i, error: err };
         await actionCtx.page.waitForTimeout(250 * attempt);
       }
     }

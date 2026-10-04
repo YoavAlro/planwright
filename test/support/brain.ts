@@ -48,7 +48,6 @@ export function demoBrain(options: BrainOptions = {}) {
     }
 
     // Planning.
-    if (meta.kind !== "plan") return undefined;
     const done = (summary: string): LlmToolCall => ({ name: "done", input: { summary } });
     const okTools = meta.history.filter((h) => h.result.startsWith("ok")).map((h) => h.tool);
     const healedTools = (meta.healing?.executed ?? []).map((s) => s.split(" ")[0]);

@@ -1,7 +1,7 @@
 {
   "name": "planwright",
   "version": "0.1.0",
-  "description": "Gherkin → Playwright agent that plans once with an LLM, replays deterministically, and re-plans only the steps that drift.",
+  "description": "Gherkin \u2192 Playwright agent that plans once with an LLM, replays deterministically, and re-plans only the steps that drift.",
   "license": "MIT",
   "author": "Yoav Alroy",
   "repository": {
@@ -53,7 +53,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "example": "npm run build && cd examples/agentic-dashboard && node ../../dist/cli.js run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

@@ -33,6 +33,7 @@ features/tasks.feature › Add a task
 ## Contents
 
 - [Quickstart](#quickstart)
+- [Example: agentic dashboard](examples/agentic-dashboard/README.md)
 - [How it works](#how-it-works)
 - [Assertions (`Then`)](#assertions-then)
 - [CI behaviour and exit codes](#ci-behaviour-and-exit-codes)
@@ -70,7 +71,7 @@ npx planwright run        # first run plans; later runs replay
 git add features/*.plan.json
 ```
 
-To try it without your own app, this repo includes a demo app: `node demo/server.ts` (Node ≥ 22.18 runs TypeScript directly), then `cd examples/quickstart && npx planwright run`.
+**See it end to end:** [`examples/agentic-dashboard`](examples/agentic-dashboard/README.md) is a support dashboard with an AI assistant. Numbers change on every load and answers are worded differently every time. `npm run example` replays its committed plans; `APP_UI=v2` ships a redesign and watches it heal; `APP_SLOW=1` hangs the backend and watches it fail as infra. No API key needed (an offline stand-in brain is used when `ANTHROPIC_API_KEY` is unset).
 
 ## How it works
 

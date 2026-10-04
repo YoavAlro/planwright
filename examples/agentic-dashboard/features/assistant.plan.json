@@ -1,0 +1,359 @@
+{
+  "$schema": "https://raw.githubusercontent.com/YoavAlro/planwright/main/schema/plan.schema.json",
+  "version": 1,
+  "feature": "assistant.feature",
+  "scenarios": {
+    "Ask about the backlog": {
+      "name": "Ask about the backlog",
+      "steps": [
+        {
+          "keyword": "Given",
+          "text": "I open the assistant",
+          "hash": "d1898c1ad8c72936",
+          "source": "planned",
+          "generatedBy": {
+            "model": "offline-demo-brain",
+            "provider": "scripted"
+          },
+          "actions": [
+            {
+              "type": "navigate",
+              "url": "/"
+            },
+            {
+              "type": "click",
+              "target": {
+                "description": "link \"Assistant\"",
+                "locators": [
+                  {
+                    "name": "Assistant",
+                    "by": "role",
+                    "role": "link"
+                  },
+                  {
+                    "by": "text",
+                    "value": "Assistant"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "keyword": "When",
+          "text": "I ask the assistant \"How many open tickets do we have?\"",
+          "hash": "aeecae21a2c2712f",
+          "source": "planned",
+          "generatedBy": {
+            "model": "offline-demo-brain",
+            "provider": "scripted"
+          },
+          "actions": [
+            {
+              "type": "fill",
+              "target": {
+                "description": "textbox \"Message\"",
+                "locators": [
+                  {
+                    "name": "Message",
+                    "by": "role",
+                    "role": "textbox"
+                  },
+                  {
+                    "by": "label",
+                    "value": "Message"
+                  },
+                  {
+                    "by": "placeholder",
+                    "value": "Ask the support agent…"
+                  },
+                  {
+                    "by": "id",
+                    "value": "message"
+                  }
+                ]
+              },
+              "value": "How many open tickets do we have?"
+            },
+            {
+              "type": "click",
+              "target": {
+                "description": "button \"Send\"",
+                "locators": [
+                  {
+                    "by": "testid",
+                    "value": "send"
+                  },
+                  {
+                    "name": "Send",
+                    "by": "role",
+                    "role": "button"
+                  },
+                  {
+                    "by": "text",
+                    "value": "Send"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "waitFor",
+              "state": "hidden",
+              "target": {
+                "description": "text \"Thinking…\"",
+                "locators": [
+                  {
+                    "by": "text",
+                    "value": "Thinking…"
+                  }
+                ]
+              },
+              "timeoutMs": 20000
+            }
+          ]
+        },
+        {
+          "keyword": "Then",
+          "text": "the assistant replies with a number of open tickets",
+          "hash": "4dd54d42ceff04bc",
+          "source": "planned",
+          "generatedBy": {
+            "model": "offline-demo-brain",
+            "provider": "scripted"
+          },
+          "actions": [
+            {
+              "type": "assert",
+              "check": {
+                "kind": "text",
+                "flags": "i",
+                "pattern": "(?=.*\\d)(?=.*\\bopen\\b)",
+                "target": {
+                  "description": "css=\".msg.assistant\"",
+                  "locators": [
+                    {
+                      "by": "css",
+                      "value": ".msg.assistant"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "keyword": "And",
+          "text": "the reply sounds like a helpful support teammate",
+          "hash": "82ce237362bc1807",
+          "source": "planned",
+          "generatedBy": {
+            "model": "offline-demo-brain",
+            "provider": "scripted"
+          },
+          "actions": [
+            {
+              "type": "judge"
+            }
+          ]
+        }
+      ]
+    },
+    "Open a ticket from chat": {
+      "name": "Open a ticket from chat",
+      "steps": [
+        {
+          "keyword": "Given",
+          "text": "I open the assistant",
+          "hash": "d1898c1ad8c72936",
+          "source": "planned",
+          "generatedBy": {
+            "model": "offline-demo-brain",
+            "provider": "scripted"
+          },
+          "actions": [
+            {
+              "type": "navigate",
+              "url": "/"
+            },
+            {
+              "type": "click",
+              "target": {
+                "description": "link \"Assistant\"",
+                "locators": [
+                  {
+                    "name": "Assistant",
+                    "by": "role",
+                    "role": "link"
+                  },
+                  {
+                    "by": "text",
+                    "value": "Assistant"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "keyword": "When",
+          "text": "I ask the assistant \"Please create a ticket about the login page timing out\"",
+          "hash": "5b5dfa41331dfa69",
+          "source": "planned",
+          "generatedBy": {
+            "model": "offline-demo-brain",
+            "provider": "scripted"
+          },
+          "actions": [
+            {
+              "type": "fill",
+              "target": {
+                "description": "textbox \"Message\"",
+                "locators": [
+                  {
+                    "name": "Message",
+                    "by": "role",
+                    "role": "textbox"
+                  },
+                  {
+                    "by": "label",
+                    "value": "Message"
+                  },
+                  {
+                    "by": "placeholder",
+                    "value": "Ask the support agent…"
+                  },
+                  {
+                    "by": "id",
+                    "value": "message"
+                  }
+                ]
+              },
+              "value": "Please create a ticket about the login page timing out"
+            },
+            {
+              "type": "click",
+              "target": {
+                "description": "button \"Send\"",
+                "locators": [
+                  {
+                    "by": "testid",
+                    "value": "send"
+                  },
+                  {
+                    "name": "Send",
+                    "by": "role",
+                    "role": "button"
+                  },
+                  {
+                    "by": "text",
+                    "value": "Send"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "waitFor",
+              "state": "hidden",
+              "target": {
+                "description": "text \"Thinking…\"",
+                "locators": [
+                  {
+                    "by": "text",
+                    "value": "Thinking…"
+                  }
+                ]
+              },
+              "timeoutMs": 20000
+            }
+          ]
+        },
+        {
+          "keyword": "Then",
+          "text": "the assistant confirms a new ticket number",
+          "hash": "b65d87bea6ba919f",
+          "source": "planned",
+          "generatedBy": {
+            "model": "offline-demo-brain",
+            "provider": "scripted"
+          },
+          "actions": [
+            {
+              "type": "assert",
+              "check": {
+                "kind": "text",
+                "pattern": "#\\d+",
+                "target": {
+                  "description": "css=\".msg.assistant\"",
+                  "locators": [
+                    {
+                      "by": "css",
+                      "value": ".msg.assistant"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "keyword": "When",
+          "text": "I go to the dashboard",
+          "hash": "49958dae83e9c1d3",
+          "source": "planned",
+          "generatedBy": {
+            "model": "offline-demo-brain",
+            "provider": "scripted"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "target": {
+                "description": "link \"Dashboard\"",
+                "locators": [
+                  {
+                    "name": "Dashboard",
+                    "by": "role",
+                    "role": "link"
+                  },
+                  {
+                    "by": "text",
+                    "value": "Dashboard"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "keyword": "Then",
+          "text": "the recent tickets table shows \"login page timing out\"",
+          "hash": "d46669bde041d63f",
+          "source": "planned",
+          "generatedBy": {
+            "model": "offline-demo-brain",
+            "provider": "scripted"
+          },
+          "actions": [
+            {
+              "type": "assert",
+              "check": {
+                "kind": "text",
+                "flags": "i",
+                "pattern": "login page timing out",
+                "target": {
+                  "description": "css=\"#recent-tickets\"",
+                  "locators": [
+                    {
+                      "by": "css",
+                      "value": "#recent-tickets"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
