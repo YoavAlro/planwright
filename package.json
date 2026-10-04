@@ -59,8 +59,8 @@
     "test:watch": "vitest",
     "prepublishOnly": "npm run build",
     "example": "npm run build && cd examples/agentic-dashboard && node ../../dist/cli.js run",
-    "example:bench": "npm run build && node examples/agentic-dashboard/bench.ts",
-    "example:laya-calibrate": "npm run build && node examples/agentic-dashboard/laya-calibrate.ts"
+    "example:bench": "npm run build && node --experimental-strip-types --no-warnings examples/agentic-dashboard/bench.ts",
+    "example:laya-calibrate": "npm run build && node --experimental-strip-types --no-warnings examples/agentic-dashboard/laya-calibrate.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
