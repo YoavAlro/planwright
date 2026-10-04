@@ -94,6 +94,8 @@ PLANWRIGHT_JUDGE=laya npx planwright run     # first use downloads ~1.7 GB of we
 3 passed · LLM: no calls · …
 ```
 
+If the tone step fails with a low `P(holds)`, calibrate first. `npm run example:laya-calibrate` scores a good reply against rude, error and off-topic replies under several question phrasings and page states, and prints which combination separates them and a threshold for it. Pass the winner to `layaJudge({ question, state, threshold })`.
+
 The step's evidence shows the calibrated probability, e.g. `P(holds) = 0.912 (threshold 0.7, …)`. `PLANWRIGHT_JUDGE=laya npm run example:bench` writes `results/benchmark-laya.md` for comparison.
 
 ### 2. Ship a redesign: healing

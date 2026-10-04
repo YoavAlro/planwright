@@ -70,7 +70,7 @@ describe("example: agentic dashboard", () => {
     expect(result.exitCode).toBe(0);
     expect(llm.calls).toHaveLength(0);
     expect(seen).toHaveLength(1);
-    expect(seen[0]!.instructions).toContain("the reply sounds like a helpful support teammate");
+    expect(seen[0]!.instructions).toContain('"the reply sounds like a helpful support teammate"');
     expect(JSON.stringify(seen[0]!.state)).toContain("open tickets");
     const judged = result.scenarios.flatMap((s) => s.steps).find((s) => s.mode === "judged");
     expect(judged?.evidence).toContain("P(holds) = 0.910");

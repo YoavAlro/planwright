@@ -14,13 +14,35 @@ export interface SystemOneClient {
   close?(): Promise<void>;
 }
 
+export interface SystemOneQuestion {
+  instructions: string;
+  criteria?: { true?: string; false?: string };
+}
+
 export interface SystemOneJudgeOptions {
   /** Minimum P(true) for the assertion to pass. Default 0.7. */
   threshold?: number;
   /** Builds the state sent to the model from the page. Default: URL, title and visible text (head + tail). */
   state?: (page: PageState) => unknown;
+  /** Builds the noul question from the assertion (Gherkin keyword already stripped). Default: defaultJudgeQuestion. */
+  question?: (assertion: string) => SystemOneQuestion;
   /** Name shown in reports. Default "system_one". */
   name?: string;
+}
+
+/** "And the reply is polite" → "the reply is polite": the keyword is Gherkin syntax, not meaning. */
+export function stripGherkinKeyword(assertion: string): string {
+  return assertion.replace(/^\s*(Given|When|Then|And|But|\*)\s+/i, "").trim();
+}
+
+export function defaultJudgeQuestion(assertion: string): SystemOneQuestion {
+  return {
+    instructions: `Does this assertion hold for the web page in the state? Assertion: "${assertion}"`,
+    criteria: {
+      true: "the page shows that the assertion holds",
+      false: "the page contradicts the assertion or does not show it",
+    },
+  };
 }
 
 /** Decision models have a short context (Laya: 512 tokens), so keep both ends of long pages. */
@@ -54,16 +76,8 @@ export function systemOneJudge(
     name: options.name ?? "system_one",
     async judge({ assertion, state }: JudgeInput): Promise<Verdict> {
       const model = await get();
-      const result = await model.systemOne(buildState(state), {
-        holds: {
-          type: "noul",
-          instructions: `Does this assertion hold for the web page in the state? Assertion: "${assertion}"`,
-          criteria: {
-            true: "the page shows that the assertion holds",
-            false: "the page contradicts the assertion or does not show it",
-          },
-        },
-      });
+      const question = (options.question ?? defaultJudgeQuestion)(stripGherkinKeyword(assertion));
+      const result = await model.systemOne(buildState(state), { holds: { type: "noul", ...question } });
       const p = result.answers.holds?.noul;
       if (typeof p !== "number") throw new Error(`${options.name ?? "system_one"} returned no noul answer`);
       return {
