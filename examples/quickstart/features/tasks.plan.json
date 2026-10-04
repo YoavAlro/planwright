@@ -1,0 +1,6 @@
+{
+  "$schema": "https://raw.githubusercontent.com/YoavAlro/planwright/main/schema/plan.schema.json",
+  "version": 1,
+  "feature": "tasks.feature",
+  "scenarios": {}
+}

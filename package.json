@@ -1,0 +1,89 @@
+{
+  "name": "planwright",
+  "version": "0.1.0",
+  "description": "Gherkin → Playwright agent that plans once with an LLM, replays deterministically, and re-plans only the steps that drift.",
+  "license": "MIT",
+  "author": "Yoav Alroy",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YoavAlro/planwright.git"
+  },
+  "keywords": [
+    "playwright",
+    "gherkin",
+    "bdd",
+    "e2e",
+    "llm",
+    "agent",
+    "self-healing",
+    "testing"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "planwright": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./llm/openai": {
+      "types": "./dist/llm/openai.d.ts",
+      "import": "./dist/llm/openai.js"
+    },
+    "./llm/google": {
+      "types": "./dist/llm/google.d.ts",
+      "import": "./dist/llm/google.js"
+    },
+    "./schema/plan.schema.json": "./schema/plan.schema.json"
+  },
+  "files": [
+    "dist",
+    "schema",
+    "skills",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@cucumber/gherkin": "^42.0.1",
+    "@cucumber/messages": "^34.2.1",
+    "jiti": "^2.7.0",
+    "picocolors": "^1.1.1"
+  },
+  "peerDependencies": {
+    "@google/genai": ">=1.0.0",
+    "openai": ">=5.0.0",
+    "playwright": ">=1.45.0"
+  },
+  "peerDependenciesMeta": {
+    "@google/genai": {
+      "optional": true
+    },
+    "openai": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "@google/genai": "^2.0.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^10.0.0",
+    "openai": "^6.0.0",
+    "playwright": "1.56.1",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^3.2.7"
+  }
+}
