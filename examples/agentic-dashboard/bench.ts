@@ -13,14 +13,15 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { anthropic, resolveConfig, run, type RunResult } from "planwright";
+import { anthropic, claudeCli, resolveConfig, run, type RunResult } from "planwright";
 import { layaJudge } from "planwright/judge/laya";
 
 import { startApp } from "./app/server.ts";
 import { offlineBrain } from "./offline-brain.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const real = !!process.env.ANTHROPIC_API_KEY;
+const cli = process.env.PLANWRIGHT_LLM === "claude-cli";
+const real = cli || !!process.env.ANTHROPIC_API_KEY;
 const laya = process.env.PLANWRIGHT_JUDGE === "laya";
 const work = mkdtempSync(join(tmpdir(), "planwright-bench-"));
 cpSync(join(here, "features"), join(work, "features"), { recursive: true });
@@ -36,12 +37,14 @@ interface Row {
   steps: number;
   llmSteps: number;
   modes: Record<string, number>;
+  /** Steps that were (re-)planned in this run, and why. */
+  drift: { step: string; kind: string; reason?: string }[];
 }
 
 async function measure(label: string, ui: "v1" | "v2"): Promise<Row> {
   const app = await startApp({ ui });
   try {
-    const llm = real ? anthropic() : offlineBrain();
+    const llm = cli ? claudeCli({ model: process.env.PLANWRIGHT_MODEL }) : real ? anthropic() : offlineBrain();
     const config = resolveConfig(
       { baseURL: app.url, llm, trace: "off", timeouts: { actionMs: 3_000 }, ...(laya ? { judge: { using: layaJudge() } } : {}) },
       work,
@@ -59,6 +62,7 @@ async function measure(label: string, ui: "v1" | "v2"): Promise<Row> {
       steps: steps.length,
       llmSteps: steps.filter((s) => s.llmCalls > 0).length,
       modes: steps.reduce<Record<string, number>>((m, s) => ((m[s.mode] = (m[s.mode] ?? 0) + 1), m), {}),
+      drift: result.drift.map((d) => ({ step: d.step, kind: d.kind, ...(d.reason ? { reason: d.reason } : {}) })),
     };
   } finally {
     await app.close();
@@ -76,7 +80,7 @@ const fmt = (n: number) => n.toLocaleString("en-US");
 const md = [
   `# Benchmark: examples/agentic-dashboard`,
   "",
-  `LLM: ${real ? "Claude via the Anthropic API (real usage and latency)" : "offline brain: token usage estimated from request sizes, no model latency"}.`,
+  `LLM: ${cli ? "Claude via the Claude Code CLI (real usage and latency; input includes cached tokens)" : real ? "Claude via the Anthropic API (real usage and latency)" : "offline brain: token usage estimated from request sizes, no model latency"}.`,
   `Judge for semantic Then steps: ${laya ? "Laya, local (no LLM tokens)" : "the LLM"}.`,
   "",
   "| Run | Steps using the LLM | LLM calls | Input tokens | Output tokens | Wall time | Exit |",
@@ -90,6 +94,15 @@ const md = [
   "",
   ...rows.map((r) => `- ${r.label}: ${Object.entries(r.modes).map(([k, v]) => `${v} ${k}`).join(", ")}`),
   "",
+  "Healed steps in cached runs (should be none):",
+  "",
+  ...(() => {
+    const healed = rows
+      .filter((r) => r.label.startsWith("Cached"))
+      .flatMap((r) => r.drift.map((d) => `- ${r.label}: ${d.step} — ${d.reason ?? d.kind}`));
+    return healed.length ? healed : ["- none"];
+  })(),
+  "",
   real
     ? ""
     : "Output tokens count tool calls only (no reasoning tokens), and wall time excludes model latency. Run with ANTHROPIC_API_KEY for real numbers.",
@@ -97,10 +110,10 @@ const md = [
 ].join("\n");
 
 mkdirSync(join(here, "results"), { recursive: true });
-const suffix = laya ? "-laya" : "";
+const suffix = `${cli ? "-claude-cli" : ""}${laya ? "-laya" : ""}`;
 writeFileSync(
   join(here, "results", `benchmark${suffix}.json`),
-  JSON.stringify({ llm: real ? "anthropic" : "offline-estimate", judge: laya ? "laya" : "llm", rows }, null, 2) + "\n",
+  JSON.stringify({ llm: cli ? "claude-cli" : real ? "anthropic" : "offline-estimate", judge: laya ? "laya" : "llm", rows }, null, 2) + "\n",
 );
 writeFileSync(join(here, "results", `benchmark${suffix}.md`), md);
 rmSync(work, { recursive: true, force: true });

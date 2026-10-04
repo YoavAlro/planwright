@@ -79,6 +79,31 @@ Where the numbers come from:
 
 After that, every run costs what the second run costs, until the UI changes. Then only the changed steps pay planning prices again (section 2: 7 healed steps, 17 calls).
 
+### Run it with real Claude, through your Claude Code login
+
+No API key needed: `claudeCli()` drives the logged-in `claude` CLI.
+
+```bash
+cd examples/agentic-dashboard
+rm features/*.plan.json                                    # optional: plan from scratch
+PLANWRIGHT_LLM=claude-cli npx planwright run               # PLANWRIGHT_MODEL=opus to pick a model
+git checkout features/                                     # restore the committed plans afterwards
+```
+
+Measured with `PLANWRIGHT_LLM=claude-cli npm run example:bench` ([`results/benchmark-claude-cli.md`](results/benchmark-claude-cli.md)):
+
+| Run | LLM calls | Input tokens | Wall time |
+|---|---|---|---|
+| First run (no plans) | 25 | ~209,000 | 106s |
+| **Cached run** | **2** | **~7,000** | **10s** |
+| After the v2 redesign (heal) | 18 | ~132,000 | 112s |
+| Cached run on v2 | 2 | ~7,000 | 11s |
+
+Input tokens include prompt-cache reads and writes. Real Claude found weak spots that the offline brain never hit, all fixed in planwright:
+- **Value-only targets:** Claude pointed checks at the element holding the value (the KPI number, the chat bubble). Those targets now fall back to position and stable class names instead of being dropped.
+- **Waiting on result text:** Claude waited for the reply's exact text, which pinned a changing value. Waits on page text are now rejected.
+- **Over-fitted patterns:** Claude copied one phrasing of a generated reply into a pattern (`created #\d+`). Patterns may now only use words from the assertion, match case-insensitively, and on a heal the failed pattern is fed back so the next one generalizes.
+
 ### Judge tone locally with Laya (zero LLM calls)
 
 The one LLM call left in a cached run is the tone judge. To hand it to [Laya](https://github.com/receptron/laya), the open-source Jev-compatible decision model, which runs locally:

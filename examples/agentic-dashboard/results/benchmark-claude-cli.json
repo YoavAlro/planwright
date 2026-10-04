@@ -1,0 +1,155 @@
+{
+  "llm": "claude-cli",
+  "judge": "llm",
+  "rows": [
+    {
+      "label": "First run (no plans)",
+      "exitCode": 0,
+      "wallMs": 105907,
+      "calls": 25,
+      "inputTokens": 208911,
+      "outputTokens": 4204,
+      "steps": 13,
+      "llmSteps": 13,
+      "modes": {
+        "planned": 13
+      },
+      "drift": [
+        {
+          "step": "Given I open the assistant",
+          "kind": "new"
+        },
+        {
+          "step": "When I ask the assistant \"How many open tickets do we have?\"",
+          "kind": "new"
+        },
+        {
+          "step": "Then the assistant replies with a number of open tickets",
+          "kind": "new"
+        },
+        {
+          "step": "And the reply sounds like a helpful support teammate",
+          "kind": "new"
+        },
+        {
+          "step": "Given I open the assistant",
+          "kind": "new"
+        },
+        {
+          "step": "When I ask the assistant \"Please create a ticket about the login page timing out\"",
+          "kind": "new"
+        },
+        {
+          "step": "Then the assistant confirms a new ticket number",
+          "kind": "new"
+        },
+        {
+          "step": "When I go to the dashboard",
+          "kind": "new"
+        },
+        {
+          "step": "Then the recent tickets table shows \"login page timing out\"",
+          "kind": "new"
+        },
+        {
+          "step": "Given I am on the dashboard",
+          "kind": "new"
+        },
+        {
+          "step": "Then I see the open tickets KPI with a number",
+          "kind": "new"
+        },
+        {
+          "step": "And I see customer satisfaction as a percentage",
+          "kind": "new"
+        },
+        {
+          "step": "And the recent tickets table lists at least one ticket",
+          "kind": "new"
+        }
+      ]
+    },
+    {
+      "label": "Cached run",
+      "exitCode": 0,
+      "wallMs": 10192,
+      "calls": 2,
+      "inputTokens": 7058,
+      "outputTokens": 305,
+      "steps": 13,
+      "llmSteps": 2,
+      "modes": {
+        "replayed": 11,
+        "judged": 2
+      },
+      "drift": []
+    },
+    {
+      "label": "After v2 redesign (heal)",
+      "exitCode": 0,
+      "wallMs": 111801,
+      "calls": 18,
+      "inputTokens": 131778,
+      "outputTokens": 2719,
+      "steps": 13,
+      "llmSteps": 9,
+      "modes": {
+        "healed": 7,
+        "judged": 2,
+        "replayed": 4
+      },
+      "drift": [
+        {
+          "step": "Given I open the assistant",
+          "kind": "healed",
+          "reason": "Target link \"Assistant\" not found; tried role=link[name=\"Assistant\"], text=\"Assistant\"."
+        },
+        {
+          "step": "When I ask the assistant \"How many open tickets do we have?\"",
+          "kind": "healed",
+          "reason": "Target button \"Send\" not found; tried testid=\"send\", role=button[name=\"Send\"], text=\"Send\"."
+        },
+        {
+          "step": "Given I open the assistant",
+          "kind": "healed",
+          "reason": "Target link \"Assistant\" not found; tried role=link[name=\"Assistant\"], text=\"Assistant\"."
+        },
+        {
+          "step": "When I ask the assistant \"Please create a ticket about the login page timing out\"",
+          "kind": "healed",
+          "reason": "Target button \"Send\" not found; tried testid=\"send\", role=button[name=\"Send\"], text=\"Send\"."
+        },
+        {
+          "step": "When I go to the dashboard",
+          "kind": "healed",
+          "reason": "Target link \"Dashboard\" not found; tried role=link[name=\"Dashboard\"], text=\"Dashboard\"."
+        },
+        {
+          "step": "Then I see the open tickets KPI with a number",
+          "kind": "healed",
+          "reason": "Assertion failed: kpi-open-tickets is not visible"
+        },
+        {
+          "step": "And I see customer satisfaction as a percentage",
+          "kind": "healed",
+          "reason": "Assertion failed: kpi-csat is not visible"
+        }
+      ]
+    },
+    {
+      "label": "Cached run on v2",
+      "exitCode": 0,
+      "wallMs": 11195,
+      "calls": 2,
+      "inputTokens": 7094,
+      "outputTokens": 329,
+      "steps": 13,
+      "llmSteps": 2,
+      "modes": {
+        "replayed": 11,
+        "judged": 2
+      },
+      "drift": []
+    }
+  ]
+}

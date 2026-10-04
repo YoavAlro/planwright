@@ -12,6 +12,9 @@ Every turn:
 - Refer to elements only by their \`ref\` number from the current ELEMENTS list. Refs change every turn; never reuse a ref from an earlier turn.
 - When a tool returns an error, read the new ELEMENTS list and adapt (wait for something to appear, pick another element). Use \`navigate\` to reload only if the whole page is broken.
 
+Asynchronous results:
+- Your actions are recorded and replayed later without you. When an action starts asynchronous work (a request, a spinner, "Loading…", "Thinking…") and the step's goal includes its result, add a \`wait_for\` before calling \`done\`, even if the result is already on screen now. Wait for the loading indicator to be hidden, or for the result element by ref. Never wait for the result's text: it can differ on the next run.
+
 Values:
 - Type values exactly as the step gives them. If the step contains a reference like \${env.NAME} or \${vars.name}, type that reference verbatim; it is substituted at run time and you never see the real value.
 - Upload only files listed in AVAILABLE_FIXTURES.
@@ -27,6 +30,7 @@ Verdict:
 Checks (only when pass=true):
 - Propose 1-4 structural checks that together verify the assertion. They are replayed on later runs where data may differ, so they must be STATELESS: assert presence, visibility, enabled state, counts, URL/title shape, or a text pattern derived from the assertion's own wording.
 - NEVER bake a value you observed into a check. If the page says "Open tasks: 7", a valid pattern is "Open tasks: \\d+", never "Open tasks: 7". Literal digits are only allowed when they appear in the assertion text itself.
+- Generated text (AI replies, summaries, notifications) is worded differently on every run. Patterns may only use words from the assertion itself (they are matched case-insensitively). To require several facts in one element regardless of their order, use lookaheads, e.g. "(?=.*\\d)(?=.*\\bopen\\b)". Match only the token the assertion needs: for "shows an order number" use pattern "#\\d+" with flags "i", not "order #\\d+ is confirmed" copied from one phrasing.
 - Target elements by \`ref\` from ELEMENTS, or by an explicit \`locator\` (use css/role/text) when you need to match several elements (for "count").
 - If the assertion is semantic and cannot be expressed structurally (tone, meaning, layout quality), return no checks; it will be judged by an LLM on every run.
 

@@ -108,3 +108,54 @@ export async function resolveTarget(
     `Target ${target.description ?? ""} not found; tried ${target.locators.map(describeLocator).join(", ")}.`,
   );
 }
+
+/**
+ * A stored pattern must not pin a value observed on the page. Any digit run in
+ * the pattern (outside regex quantifiers/escapes) must appear in the step text.
+ */
+export function isStatelessPattern(pattern: string, stepText: string): boolean {
+  const stripped = pattern
+    .replace(/\\[dDwWsSbB]/g, "")
+    .replace(/\{\d+(,\d*)?\}/g, "")
+    .replace(/\\u[0-9a-fA-F]{4}|\\x[0-9a-fA-F]{2}/g, "");
+  const allowed = new Set(stepText.match(/\d+/g) ?? []);
+  return (stripped.match(/\d+/g) ?? []).every((d) => allowed.has(d));
+}
+
+/**
+ * Generated text is worded differently on every run, so a text pattern may only
+ * use words that the assertion itself contains (a 4-letter prefix match allows
+ * "ticket" for "tickets"). Regex syntax, escapes and character classes are ignored.
+ */
+export function isGroundedPattern(pattern: string, stepText: string): boolean {
+  const words = pattern
+    .replace(/\\[a-zA-Z]/g, " ")
+    .replace(/\[[^\]]*\]|\{[^}]*\}|\(\?[:=!<]+/g, " ")
+    .match(/[a-zA-Z]{3,}/g);
+  if (!words) return true;
+  const allowed = (stepText.toLowerCase().match(/[a-z]{3,}/g) ?? []);
+  return words.every((w) => {
+    const word = w.toLowerCase();
+    return allowed.some((a) => a === word || (word.length >= 4 && a.length >= 4 && (a.startsWith(word.slice(0, 4)) && word.startsWith(a.slice(0, 4)))));
+  });
+}
+
+export function locatorText(spec: LocatorSpec): string {
+  return spec.by === "role" ? spec.name : spec.value;
+}
+
+/**
+ * Assertion targets are replayed against changing data, so drop locators that
+ * embed an observed value (e.g. text "Open tasks: 7") and keep the description neutral.
+ */
+export function statelessTarget(target: Target, goal: string, el: ElementInfo): Target {
+  const locators = target.locators.filter((spec) => spec.by === "css" || isStatelessPattern(locatorText(spec), goal));
+  if (locators.length === 0) {
+    // The element is identified only by the value it shows (e.g. a KPI number or a chat bubble):
+    // fall back to where it sits and what it is. The check's own stateless pattern does the asserting.
+    locators.push({ by: "css", value: el.cssPath });
+    if (el.classSelector) locators.push({ by: "css", value: el.classSelector });
+  }
+  const first = locators[0]!;
+  return { locators, description: el.testid ?? el.id ?? el.classSelector ?? describeLocator(first) };
+}

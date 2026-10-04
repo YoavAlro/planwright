@@ -7,7 +7,7 @@ import { resolveTemplate, toReferences, type TemplateScope } from "../plan/templ
 import type { Action, Target } from "../plan/types.js";
 import { describeAction, executeAction, navigate, type ActionContext } from "../runtime/actions.js";
 import { ConfigError, DriftError, InfraError, StepFailedError } from "../runtime/errors.js";
-import { recordTarget } from "../runtime/locators.js";
+import { recordTarget, statelessTarget } from "../runtime/locators.js";
 import { capturePageState, type ElementInfo, type PageState } from "../runtime/page-state.js";
 import { PLANNER_SYSTEM, PLANNER_TOOLS, renderPageState } from "./prompts.js";
 import type { LlmSession } from "./session.js";
@@ -235,10 +235,20 @@ async function performTool(
     case "wait_for": {
       const state_ = args.state === "hidden" ? "hidden" : "visible";
       const timeoutMs = intArg(args, "timeout_ms");
-      const t: Target =
-        args.ref !== undefined
-          ? await target()
-          : { locators: [{ by: "text", value: strArg(args, "text") }], description: `text "${String(args.text)}"` };
+      let t: Target;
+      if (args.ref !== undefined) {
+        // Waits replay on later runs with different data: never key them on an observed value.
+        const el = elementByRef(state, args);
+        t = statelessTarget(await recordTarget(page, el), input.goal, el);
+      } else {
+        const text = strArg(args, "text");
+        if (state_ === "visible" && !input.goal.toLowerCase().includes(text.toLowerCase())) {
+          throw new DriftError(
+            `wait_for text "${text}" is page content that can differ on the next run. Wait for a loading indicator to be hidden, or for an element by ref, instead.`,
+          );
+        }
+        t = { locators: [{ by: "text", value: text }], description: `text "${text}"` };
+      }
       return run(ctx, { type: "waitFor", target: t, state: state_, ...(timeoutMs ? { timeoutMs } : {}) });
     }
     default:

@@ -3,14 +3,15 @@ import type { Page } from "playwright";
 import type { TemplateScope } from "../plan/template.js";
 import type { Action, Check, LocatorSpec, Target } from "../plan/types.js";
 import { runCheck, type ActionContext } from "../runtime/actions.js";
-import { DriftError } from "../runtime/errors.js";
-import { buildLocator, describeLocator, recordTarget } from "../runtime/locators.js";
+import { DriftError, InfraError } from "../runtime/errors.js";
+import { buildLocator, describeLocator, isGroundedPattern, isStatelessPattern, recordTarget, statelessTarget } from "../runtime/locators.js";
 import { capturePageState, type PageState } from "../runtime/page-state.js";
 import { ASSERTER_SYSTEM, ASSERT_TOOL, JUDGE_SYSTEM, JUDGE_TOOL, renderPageState } from "./prompts.js";
 import type { Judge, Verdict } from "../judge/types.js";
 import type { LlmSession } from "./session.js";
 
 export type { Verdict } from "../judge/types.js";
+export { isStatelessPattern } from "../runtime/locators.js";
 
 /** One single-literal `kind` per member, so `meta.kind` checks narrow cleanly in user code. */
 export type AssertRequestMeta =
@@ -39,41 +40,31 @@ export interface AssertInput {
   judge?: Judge;
 }
 
-function readVerdict(input: Record<string, unknown> | undefined, text: string | undefined): Verdict {
-  if (!input) return { pass: false, confidence: 0, evidence: `No verdict returned: ${text ?? "(empty)"}` };
+/** A verdict needs at least a boolean `pass`; anything else is a malformed model answer, not a judgement. */
+function readVerdict(input: Record<string, unknown> | undefined): Verdict | undefined {
+  if (!input || typeof input.pass !== "boolean") return undefined;
   return {
-    pass: input.pass === true,
+    pass: input.pass,
     confidence: typeof input.confidence === "number" ? input.confidence : 0,
     evidence: typeof input.evidence === "string" ? input.evidence : "",
   };
 }
 
-/**
- * A stored pattern must not pin a value observed on the page. Any digit run in
- * the pattern (outside regex quantifiers/escapes) must appear in the step text.
- */
-export function isStatelessPattern(pattern: string, stepText: string): boolean {
-  const stripped = pattern
-    .replace(/\\[dDwWsSbB]/g, "")
-    .replace(/\{\d+(,\d*)?\}/g, "")
-    .replace(/\\u[0-9a-fA-F]{4}|\\x[0-9a-fA-F]{2}/g, "");
-  const allowed = new Set(stepText.match(/\d+/g) ?? []);
-  return (stripped.match(/\d+/g) ?? []).every((d) => allowed.has(d));
+/** Asks for a verdict, retrying once on a malformed answer. Two malformed answers are a tooling problem (exit 3). */
+async function requestVerdict(session: LlmSession, request: Parameters<LlmSession["complete"]>[0]) {
+  let last: Awaited<ReturnType<LlmSession["complete"]>> | undefined;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    last = await session.complete(request);
+    const verdict = readVerdict(last.toolCall?.input);
+    if (verdict) return { verdict, raw: last.toolCall?.input };
+  }
+  throw new InfraError(
+    `The model returned no usable verdict for "${(request.meta as AssertRequestMeta).goal}": ${JSON.stringify(last?.toolCall ?? last?.text ?? null).slice(0, 300)}`,
+  );
 }
 
-function locatorText(spec: LocatorSpec): string {
-  return spec.by === "role" ? spec.name : spec.value;
-}
-
-/**
- * Assertion targets are replayed against changing data, so drop locators that
- * embed an observed value (e.g. text "Open tasks: 7") and keep the description neutral.
- */
-function statelessTarget(target: Target, goal: string, hook: string | undefined): Target {
-  const locators = target.locators.filter((spec) => spec.by === "css" || isStatelessPattern(locatorText(spec), goal));
-  if (locators.length === 0) throw new DriftError("every locator for this element embeds an observed value");
-  const first = locators[0]!;
-  return { locators, description: hook ?? describeLocator(first) };
+function withFlag(flags: string | undefined, flag: string): string {
+  return flags?.includes(flag) ? flags : `${flags ?? ""}${flag}`;
 }
 
 function toLocatorSpec(raw: ProposedCheck["locator"]): LocatorSpec | undefined {
@@ -100,7 +91,7 @@ async function compileCheck(page: Page, state: PageState, raw: ProposedCheck, go
     if (raw.ref !== undefined && raw.kind !== "count") {
       const el = state.elements[raw.ref];
       if (!el) throw new DriftError(`unknown ref ${raw.ref}`);
-      target = statelessTarget(await recordTarget(page, el), goal, el.testid ?? el.id);
+      target = statelessTarget(await recordTarget(page, el), goal, el);
     } else {
       const spec = toLocatorSpec(raw.locator);
       if (!spec) throw new DriftError("check needs a ref or a valid locator");
@@ -116,6 +107,9 @@ async function compileCheck(page: Page, state: PageState, raw: ProposedCheck, go
       throw new DriftError(`invalid regex /${pattern}/`);
     }
     if (!isStatelessPattern(pattern, goal)) throw new DriftError(`pattern /${pattern}/ pins an observed value`);
+    if (raw.kind === "text" && !isGroundedPattern(pattern, goal)) {
+      throw new DriftError(`pattern /${pattern}/ uses words that are not in the assertion; generated text is worded differently each run`);
+    }
   }
   switch (raw.kind) {
     case "visible":
@@ -126,7 +120,8 @@ async function compileCheck(page: Page, state: PageState, raw: ProposedCheck, go
       return { kind: "count", target: target!, min: raw.min ?? 1 };
     case "text":
       if (!pattern) throw new DriftError("text check needs a pattern");
-      return { kind: "text", target: target!, pattern, ...(raw.flags ? { flags: raw.flags } : {}) };
+      // Wording is matched case-insensitively: "Ticket #12" and "ticket #12" state the same fact.
+      return { kind: "text", target: target!, pattern, flags: /[a-zA-Z]/.test(pattern.replace(/\\[a-zA-Z]/g, "")) ? withFlag(raw.flags, "i") : raw.flags ?? "" };
     case "url":
     case "title":
       if (!pattern) throw new DriftError(`${raw.kind} check needs a pattern`);
@@ -136,9 +131,9 @@ async function compileCheck(page: Page, state: PageState, raw: ProposedCheck, go
   }
 }
 
-function userContent(goal: string, state: PageState) {
+function userContent(goal: string, state: PageState, note?: string) {
   return [
-    { type: "text" as const, text: `GOAL (assertion): ${goal}\n\n${renderPageState(state)}` },
+    { type: "text" as const, text: `GOAL (assertion): ${goal}\n\n${note ? `${note}\n\n` : ""}${renderPageState(state)}` },
     ...(state.screenshot ? [{ type: "image" as const, mediaType: "image/jpeg" as const, data: state.screenshot }] : []),
   ];
 }
@@ -151,14 +146,13 @@ export async function judge(input: AssertInput): Promise<Verdict> {
   }
   const state = await capturePageState(input.page, { screenshot: true, testIdAttribute: input.testIdAttribute });
   const meta: AssertRequestMeta = { kind: "judge", goal: input.goal, state };
-  const response = await input.session.complete({
+  const { verdict } = await requestVerdict(input.session, {
     purpose: "judge",
     system: JUDGE_SYSTEM,
     content: userContent(input.goal, state),
     tools: [JUDGE_TOOL],
     meta,
   });
-  const verdict = readVerdict(response.toolCall?.input, response.text);
   return { ...verdict, pass: verdict.pass && verdict.confidence >= input.minConfidence };
 }
 
@@ -174,18 +168,23 @@ export interface CompiledAssertion {
  * checks into stateless assert actions. Every check must pass on the current
  * page and must not pin observed values; otherwise the step is stored as judge.
  */
-export async function compileAssertion(input: AssertInput): Promise<CompiledAssertion> {
+export async function compileAssertion(
+  input: AssertInput,
+  /** Why the previously cached checks failed although the assertion still holds (they over-fitted). */
+  previousFailure?: string,
+): Promise<CompiledAssertion> {
   const state = await capturePageState(input.page, { screenshot: true, testIdAttribute: input.testIdAttribute });
   const meta: AssertRequestMeta = { kind: "assert", goal: input.goal, state };
-  const response = await input.session.complete({
+  const note = previousFailure
+    ? `PREVIOUS CHECKS FAILED although the assertion still holds, so they were too specific: ${previousFailure}\nPropose checks that also accept the wording on this page and any other wording of the same fact.`
+    : undefined;
+  const { verdict, raw } = await requestVerdict(input.session, {
     purpose: "assert",
     system: ASSERTER_SYSTEM,
-    content: userContent(input.goal, state),
+    content: userContent(input.goal, state, note),
     tools: [ASSERT_TOOL],
     meta,
   });
-  const raw = response.toolCall?.input;
-  const verdict = readVerdict(raw, response.text);
   if (!verdict.pass || verdict.confidence < input.minConfidence) {
     return { verdict: { ...verdict, pass: false }, actions: [], rejected: [] };
   }

@@ -18,6 +18,8 @@ export interface ElementInfo {
   checked?: boolean;
   interactive: boolean;
   cssPath: string;
+  /** `tag.class1.class2` from stable-looking class names, when there are any. */
+  classSelector?: string;
 }
 
 export interface PageState {
@@ -119,6 +121,14 @@ function collectElements(args: { testIdAttribute: string; maxInteractive: number
     return parts.join(" > ");
   };
 
+  // Hashed / generated class names (css-1x2y3z, sc-AbCdE, _a1b2c3) change between builds.
+  const classSelector = (el: Element): string | undefined => {
+    const stable = Array.from(el.classList)
+      .filter((c) => /^[a-zA-Z][a-zA-Z-]*$/.test(c) && !/^(css|sc|jsx|svelte)-/.test(c))
+      .slice(0, 3);
+    return stable.length ? `${el.tagName.toLowerCase()}.${stable.join(".")}` : undefined;
+  };
+
   const seen = new Set<Element>();
   const picked: { el: Element; interactive: boolean }[] = [];
   for (const el of Array.from(document.querySelectorAll(INTERACTIVE))) {
@@ -177,6 +187,7 @@ function collectElements(args: { testIdAttribute: string; maxInteractive: number
       checked: tag === "input" && ["checkbox", "radio"].includes(input.type) ? input.checked : undefined,
       interactive,
       cssPath: cssPath(el),
+      classSelector: classSelector(el),
     };
   });
 }

@@ -15,6 +15,8 @@ export type { RunOptions } from "./runner.js";
 
 export { anthropic, AnthropicProvider, DEFAULT_ANTHROPIC_MODEL } from "./llm/anthropic.js";
 export type { AnthropicProviderOptions } from "./llm/anthropic.js";
+export { claudeCli, ClaudeCliProvider } from "./llm/claude-cli.js";
+export type { ClaudeCliOptions } from "./llm/claude-cli.js";
 export { ScriptedProvider } from "./llm/scripted.js";
 export { systemOneJudge, defaultJudgeState, defaultJudgeQuestion, stripGherkinKeyword } from "./judge/system-one.js";
 export type { SystemOneClient, SystemOneJudgeOptions, SystemOneQuestion } from "./judge/system-one.js";

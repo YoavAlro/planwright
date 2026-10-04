@@ -429,7 +429,7 @@ async function runPlannedStep(input: PlannedStepInput): Promise<StepOutcome> {
       if (!verdict.pass) {
         throw new StepFailedError(`Assertion does not hold: ${verdict.evidence} (cached check: ${replayed.error.message})`);
       }
-      const compiled = await compileAssertion(assertInput);
+      const compiled = await compileAssertion(assertInput, replayed.error.message);
       writeAgentLog(input, { goal, mode: "heal-assertion", reason: replayed.error.message, verdict: compiled.verdict, rejected: compiled.rejected, actions: compiled.actions });
       const actions: Action[] = compiled.verdict.pass ? compiled.actions : [{ type: "judge" }];
       return produced(actions, "healed", replayed.error.message, verdict.evidence);

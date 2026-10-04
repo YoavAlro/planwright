@@ -85,6 +85,8 @@ From [`examples/agentic-dashboard`](examples/agentic-dashboard/README.md), a sup
 | After a UI redesign (heal) | 8 of 13 | 17 | ~43,600 | 46.4s |
 | Cached run after the redesign | 1 of 13 | 1 | ~1,700 | 3.3s |
 
+**With real Claude** (`PLANWRIGHT_LLM=claude-cli npm run example:bench`, through the Claude Code CLI): the first run planned all 13 steps in 25 calls (~209k input tokens, 106s). Cached runs made 2 calls (~7k tokens, 10s) with no re-planning. After the redesign, 7 steps healed in 18 calls, and the next cached run was back to 2 calls. Full table: [`results/benchmark-claude-cli.md`](examples/agentic-dashboard/results/benchmark-claude-cli.md).
+
 The one call left in a cached run is a deliberately semantic assertion ("the reply sounds like a helpful support teammate"), judged by the LLM every time. These numbers come from the example's offline brain: input tokens are estimated from the actual request sizes, and browser time excludes model latency. With `ANTHROPIC_API_KEY` set, the benchmark reports the API's real usage and latency. Details: [`results/benchmark.md`](examples/agentic-dashboard/results/benchmark.md).
 
 ## How it works
@@ -206,15 +208,19 @@ Ready-made patterns: [`examples/form-login`](examples/form-login/planwright.conf
 
 ```ts
 import { anthropic } from "planwright";                 // default (claude-opus-5-5, ANTHROPIC_API_KEY)
+import { claudeCli } from "planwright";                 // your logged-in Claude Code CLI (`claude -p`), no API key
 import { openai } from "planwright/llm/openai";         // npm i openai
 import { google } from "planwright/llm/google";         // npm i @google/genai (Gemini API or Vertex)
 
 llm: anthropic({ model: "claude-opus-5-5", effort: "medium" })
+llm: claudeCli()                                        // or claudeCli({ model: "opus" })
 llm: openai({ model: "<vision + tool-calling model>" })
 llm: google({ model: "<gemini model>", vertex: { project: "my-proj", location: "us-central1" } })
 ```
 
 The Anthropic adapter enables server-side refusal fallbacks by default (`fallbacks: "default"`). Pass `fallbacks: false` to turn them off, for example when a proxy rejects the beta header.
+
+`claudeCli()` runs each request as one isolated `claude -p` turn: Claude Code's own tools, settings, MCP servers and session history are switched off, tool calls come back as `--json-schema` structured output, and screenshots go in as image blocks. It runs on whatever the CLI is logged in with, a Claude subscription included.
 
 A provider implements one method, `complete(request) → { toolCall?, text?, usage }`. Requests are single-turn (state and history as text, at most one screenshot), so adapters stay small. `ScriptedProvider` is a deterministic test double for your own tests.
 

@@ -1,4 +1,4 @@
-import { anthropic, defineConfig } from "planwright";
+import { anthropic, claudeCli, defineConfig } from "planwright";
 import { layaJudge } from "planwright/judge/laya";
 
 import { startApp, type App } from "./app/server.js";
@@ -8,15 +8,18 @@ import { offlineBrain } from "./offline-brain.js";
 const port = Number(process.env.PORT ?? 4280);
 let app: App | undefined;
 
-if (!process.env.ANTHROPIC_API_KEY) {
-  process.stderr.write("planwright example: ANTHROPIC_API_KEY is not set, using the offline demo brain.\n");
+/** PLANWRIGHT_LLM=claude-cli → your logged-in Claude Code CLI; else ANTHROPIC_API_KEY → API; else the offline brain. */
+function pickLlm() {
+  if (process.env.PLANWRIGHT_LLM === "claude-cli") return claudeCli({ model: process.env.PLANWRIGHT_MODEL });
+  if (process.env.ANTHROPIC_API_KEY) return anthropic();
+  process.stderr.write("planwright example: no LLM configured (PLANWRIGHT_LLM=claude-cli or ANTHROPIC_API_KEY), using the offline demo brain.\n");
+  return offlineBrain();
 }
 
 export default defineConfig({
   baseURL: `http://127.0.0.1:${port}`,
   features: "features",
-  // Real model when a key is available; otherwise a scripted stand-in that knows this app.
-  llm: process.env.ANTHROPIC_API_KEY ? anthropic() : offlineBrain(),
+  llm: pickLlm(),
   // PLANWRIGHT_JUDGE=laya judges semantic Thens with Laya locally (npm i @receptron/laya).
   ...(process.env.PLANWRIGHT_JUDGE === "laya" ? { judge: { using: layaJudge({ state: conversation, threshold: 0.5 }) } } : {}),
   hooks: {

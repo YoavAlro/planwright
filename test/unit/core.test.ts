@@ -6,7 +6,7 @@ import { emptyPlan, serializePlan } from "../../src/plan/store.js";
 import { resolveTemplate, stepHash, toReferences } from "../../src/plan/template.js";
 import { renderJUnit } from "../../src/report/files.js";
 import { ConfigError } from "../../src/runtime/errors.js";
-import { candidateLocators } from "../../src/runtime/locators.js";
+import { candidateLocators, isGroundedPattern } from "../../src/runtime/locators.js";
 
 describe("templates", () => {
   const scope = { env: { PASSWORD: "s3cr3t-pw" }, params: { name: "Call mom", n: "1" }, vars: { runId: "run-42" } };
@@ -99,6 +99,17 @@ describe("stateless pattern guard", () => {
     expect(isStatelessPattern("Open tasks: 7", "the open tasks counter is shown")).toBe(false);
     expect(isStatelessPattern("\\d{3}-\\d{4}", "a phone number is shown")).toBe(true);
     expect(isStatelessPattern("3 results", 'I see "3 results"')).toBe(true);
+  });
+});
+
+describe("grounded pattern guard", () => {
+  it("only allows words from the assertion, ignoring regex syntax", () => {
+    const step = "Then the assistant confirms a new ticket number";
+    expect(isGroundedPattern("#\\d+", step)).toBe(true);
+    expect(isGroundedPattern("tickets?\\s*#\\d+", step)).toBe(true);
+    expect(isGroundedPattern("created\\s+#\\d+", step)).toBe(false);
+    expect(isGroundedPattern("(?=.*\\d)(?=.*\\bopen\\b)", "the reply has a number of open tickets")).toBe(true);
+    expect(isGroundedPattern("^\\d+(\\.\\d+)?%$", "satisfaction as a percentage")).toBe(true);
   });
 });
 
