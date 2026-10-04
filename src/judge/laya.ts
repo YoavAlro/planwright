@@ -22,8 +22,16 @@ export function layaJudge(options: LayaJudgeOptions = {}): Judge {
       let mod: { Laya: { load(opts?: Record<string, unknown>): Promise<SystemOneClient> } };
       try {
         mod = (await import(LAYA_MODULE)) as typeof mod;
-      } catch {
-        throw new ConfigError("layaJudge() needs the optional dependency: npm install @receptron/laya");
+      } catch (err) {
+        const e = err as NodeJS.ErrnoException;
+        if (e.code === "ERR_MODULE_NOT_FOUND" && e.message.includes(LAYA_MODULE)) {
+          throw new ConfigError(
+            "layaJudge() needs the optional dependency: npm install @receptron/laya " +
+              "(inside the planwright repo itself: npm install -D @receptron/laya)",
+          );
+        }
+        // Installed but failed to load (e.g. onnxruntime-node native binary): show the real cause.
+        throw new ConfigError(`Loading @receptron/laya failed: ${e.message}`);
       }
       return mod.Laya.load(options.load);
     },

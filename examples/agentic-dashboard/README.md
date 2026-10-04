@@ -84,7 +84,7 @@ After that, every run costs what the second run costs, until the UI changes. The
 The one LLM call left in a cached run is the tone judge. To hand it to [Laya](https://github.com/receptron/laya), the open-source Jev-compatible decision model, which runs locally:
 
 ```bash
-npm install @receptron/laya                  # from the repo root; pulls onnxruntime-node
+npm install -D @receptron/laya               # from the repo root; -D is required inside this repo (it's an optional peer of planwright)
 cd examples/agentic-dashboard
 PLANWRIGHT_JUDGE=laya npx planwright run     # first use downloads ~1.7 GB of weights from Hugging Face
 ```
