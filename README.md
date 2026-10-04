@@ -127,7 +127,7 @@ judge: { using: layaJudge({ threshold: 0.8 }) }              // stricter: P(hold
 judge: { using: systemOneJudge(myJevClient) }                // any client exposing systemOne(state, questions)
 ```
 
-Decision models read a short state (Laya: 512 tokens). The default state is the URL, the title, and the head and tail of the visible text. Pass `state: (page) => …` to focus on the region that matters. Structural `Then` checks and planning still use the LLM; only the semantic judge moves.
+Decision models read a short state (Laya: 512 tokens). The default state is the URL, the title, and the head and tail of the visible text. **Focus it with `state: (page) => …`.** In [calibration](examples/agentic-dashboard/results/laya-calibration.md), whole-page state blurred Laya's verdicts (0.3–0.9 for everything), while the chat transcript alone separated helpful from rude replies by about 0.78. Structural `Then` checks and planning still use the LLM; only the semantic judge moves.
 
 ## CI behaviour and exit codes
 

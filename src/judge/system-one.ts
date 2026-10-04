@@ -22,7 +22,11 @@ export interface SystemOneQuestion {
 export interface SystemOneJudgeOptions {
   /** Minimum P(true) for the assertion to pass. Default 0.7. */
   threshold?: number;
-  /** Builds the state sent to the model from the page. Default: URL, title and visible text (head + tail). */
+  /**
+   * Builds the state sent to the model from the page. Default: URL, title and visible text (head + tail).
+   * Focus it on the region the assertion is about when you can: whole-page text with navigation and
+   * boilerplate measurably blurs the model's judgement.
+   */
   state?: (page: PageState) => unknown;
   /** Builds the noul question from the assertion (Gherkin keyword already stripped). Default: defaultJudgeQuestion. */
   question?: (assertion: string) => SystemOneQuestion;
@@ -35,14 +39,12 @@ export function stripGherkinKeyword(assertion: string): string {
   return assertion.replace(/^\s*(Given|When|Then|And|But|\*)\s+/i, "").trim();
 }
 
+/**
+ * "Is it true that <assertion>?" — the phrasing that separated good from bad
+ * best when calibrated with Laya (examples/agentic-dashboard/results/laya-calibration.md).
+ */
 export function defaultJudgeQuestion(assertion: string): SystemOneQuestion {
-  return {
-    instructions: `Does this assertion hold for the web page in the state? Assertion: "${assertion}"`,
-    criteria: {
-      true: "the page shows that the assertion holds",
-      false: "the page contradicts the assertion or does not show it",
-    },
-  };
+  return { instructions: `Is it true that ${assertion}?` };
 }
 
 /** Decision models have a short context (Laya: 512 tokens), so keep both ends of long pages. */

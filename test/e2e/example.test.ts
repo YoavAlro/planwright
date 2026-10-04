@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { startApp, type App } from "../../examples/agentic-dashboard/app/server.js";
+import { conversation } from "../../examples/agentic-dashboard/judge-state.js";
 import { offlineBrain } from "../../examples/agentic-dashboard/offline-brain.js";
 import { resolveConfig, run, systemOneJudge, type Judge, type SystemOneClient } from "../../src/index.js";
 
@@ -70,7 +71,7 @@ describe("example: agentic dashboard", () => {
     expect(result.exitCode).toBe(0);
     expect(llm.calls).toHaveLength(0);
     expect(seen).toHaveLength(1);
-    expect(seen[0]!.instructions).toContain('"the reply sounds like a helpful support teammate"');
+    expect(seen[0]!.instructions).toBe("Is it true that the reply sounds like a helpful support teammate?");
     expect(JSON.stringify(seen[0]!.state)).toContain("open tickets");
     const judged = result.scenarios.flatMap((s) => s.steps).find((s) => s.mode === "judged");
     expect(judged?.evidence).toContain("P(holds) = 0.910");
@@ -81,5 +82,21 @@ describe("example: agentic dashboard", () => {
     const { result } = await runAgainst({}, "not @mutating", systemOneJudge(client));
     expect(result.exitCode).toBe(1);
     expect(result.scenarios.find((s) => s.status === "failed")?.error).toMatch(/P\(holds\) = 0.200/);
+  });
+
+  it("the example's Laya state is the chat transcript, ending with the reply", async () => {
+    let state: { conversation: string[] } | undefined;
+    const client: SystemOneClient = {
+      async systemOne(s) {
+        state = s as { conversation: string[] };
+        return { answers: { holds: { noul: 0.9 } } };
+      },
+    };
+    const { result } = await runAgainst({}, "not @mutating", systemOneJudge(client, { state: conversation, threshold: 0.5 }));
+    expect(result.exitCode).toBe(0);
+    expect(state?.conversation[0]).toMatch(/^Hi! I can look up tickets/);
+    expect(state?.conversation[1]).toBe("How many open tickets do we have?");
+    expect(state?.conversation.at(-1)).toMatch(/\d+/);
+    expect(state?.conversation).toHaveLength(3);
   });
 });
