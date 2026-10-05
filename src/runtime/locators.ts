@@ -41,11 +41,11 @@ function isStableId(id: string): boolean {
 export function candidateLocators(el: ElementInfo): LocatorSpec[] {
   const out: LocatorSpec[] = [];
   if (el.testid) out.push({ by: "testid", value: el.testid });
-  if (el.role && el.name && !el.name.endsWith("…")) out.push({ by: "role", role: el.role, name: el.name });
+  if (el.role && el.name && !el.nameTruncated) out.push({ by: "role", role: el.role, name: el.name });
   if (el.label) out.push({ by: "label", value: el.label });
   if (el.placeholder) out.push({ by: "placeholder", value: el.placeholder });
   if (el.id && isStableId(el.id)) out.push({ by: "id", value: el.id });
-  if (el.text && !el.text.endsWith("…") && el.text.length <= 80) out.push({ by: "text", value: el.text });
+  if (el.text && !el.textTruncated && el.text.length <= 80) out.push({ by: "text", value: el.text });
   out.push({ by: "css", value: el.cssPath });
   return out;
 }

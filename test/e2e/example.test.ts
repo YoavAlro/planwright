@@ -1,4 +1,4 @@
-import { cpSync, mkdtempSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { startApp, type App } from "../../examples/agentic-dashboard/app/server.js";
 import { conversation } from "../../examples/agentic-dashboard/judge-state.js";
 import { offlineBrain } from "../../examples/agentic-dashboard/offline-brain.js";
-import { resolveConfig, run, systemOneJudge, type Judge, type SystemOneClient } from "../../src/index.js";
+import { resolveConfig, run, ScriptedProvider, systemOneJudge, type Judge, type LlmProvider, type SystemOneClient } from "../../src/index.js";
 
 /**
  * Keeps examples/agentic-dashboard honest: its committed plans must replay,
@@ -99,4 +99,42 @@ describe("example: agentic dashboard", () => {
     expect(state?.conversation.at(-1)).toMatch(/\d+/);
     expect(state?.conversation).toHaveLength(3);
   });
+
+  it("a hidden-wait on an indicator that vanished while the model was thinking is recorded, without positional css", async () => {
+    app = await startApp({});
+    const dir = mkdtempSync(join(tmpdir(), "planwright-race-"));
+    writeFileSync(
+      join(dir, "ask.feature"),
+      `Feature: Ask\n  Scenario: Ask\n    Given I open the assistant\n    When I ask the assistant "How many open tickets do we have?"\n`,
+    );
+    // Mimics a real model: it sees "Thinking…" in its snapshot, but answers after the reply has landed.
+    const brain = new ScriptedProvider((meta) => {
+      if (meta.kind !== "plan") return undefined;
+      const els = meta.state.elements;
+      const ok = meta.history.filter((h) => h.result.startsWith("ok")).map((h) => h.tool);
+      if (/open the assistant/.test(meta.goal)) {
+        return meta.state.url.endsWith("/chat") ? { name: "done", input: { summary: "open" } } : { name: "navigate", input: { url: "/chat" } };
+      }
+      if (!ok.includes("fill")) return { name: "fill", input: { ref: els.find((e) => e.role === "textbox")!.ref, value: "How many open tickets do we have?" } };
+      if (!ok.includes("click")) return { name: "click", input: { ref: els.find((e) => e.role === "button" && e.name === "Send")!.ref } };
+      const thinking = els.find((e) => e.role === "status");
+      if (thinking && !meta.history.some((h) => h.tool === "wait_for")) return { name: "wait_for", input: { ref: thinking.ref, state: "hidden" } };
+      return { name: "done", input: { summary: "answered" } };
+    });
+    const slow: LlmProvider = {
+      name: brain.name,
+      model: brain.model,
+      complete: async (req) => {
+        await new Promise((r) => setTimeout(r, 2_000));
+        return brain.complete(req);
+      },
+    };
+    const result = await run({ config: resolveConfig({ baseURL: app.url, llm: slow, trace: "off", features: "." }, dir), write: () => undefined });
+    expect(result.exitCode).toBe(0);
+    const plan = JSON.parse(readFileSync(join(dir, "ask.plan.json"), "utf8"));
+    const wait = plan.scenarios.Ask.steps[1].actions.find((a: { type: string }) => a.type === "waitFor");
+    expect(wait).toMatchObject({ state: "hidden" });
+    expect(wait.target.locators.some((l: { by: string }) => l.by === "css")).toBe(false);
+    expect(wait.target.locators).toEqual(expect.arrayContaining([{ by: "role", role: "status", name: "Thinking…" }]));
+  }, 60_000);
 });

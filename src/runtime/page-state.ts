@@ -7,6 +7,9 @@ export interface ElementInfo {
   role?: string;
   name?: string;
   text?: string;
+  /** True when `name` / `text` were shortened for display; shortened values are never used as locators. */
+  nameTruncated?: boolean;
+  textTruncated?: boolean;
   id?: string;
   testid?: string;
   label?: string;
@@ -161,21 +164,31 @@ function collectElements(args: { testIdAttribute: string; maxInteractive: number
     const isPassword = tag === "input" && input.type === "password";
     const role = implicitRole(el);
     const label = labelOf(el);
+    const full = (v: string | null | undefined) => (v ?? "").replace(/\s+/g, " ").trim();
     const text = clean((el as HTMLElement).innerText, 120);
-    const name =
-      clean(el.getAttribute("aria-label")) ??
-      label ??
-      (tag === "input" && ["button", "submit", "reset"].includes(input.type) ? clean(input.value) : undefined) ??
-      clean((el as HTMLElement).innerText) ??
-      clean(el.getAttribute("title")) ??
-      clean(el.getAttribute("alt")) ??
-      clean(el.getAttribute("placeholder"));
+    const textTruncated = full((el as HTMLElement).innerText).length > 120 || undefined;
+    const rawName =
+      [
+        el.getAttribute("aria-label"),
+        label,
+        tag === "input" && ["button", "submit", "reset"].includes(input.type) ? input.value : undefined,
+        (el as HTMLElement).innerText,
+        el.getAttribute("title"),
+        el.getAttribute("alt"),
+        el.getAttribute("placeholder"),
+      ]
+        .map(full)
+        .find((v) => v.length > 0) ?? "";
+    const name = clean(rawName);
+    const nameTruncated = rawName.length > 80 || undefined;
     return {
       ref,
       tag,
       role,
       name,
       text,
+      nameTruncated,
+      textTruncated,
       id: el.id || undefined,
       testid: el.getAttribute(testIdAttribute) ?? undefined,
       label,

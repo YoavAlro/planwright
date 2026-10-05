@@ -7,7 +7,7 @@ import { resolveTemplate, toReferences, type TemplateScope } from "../plan/templ
 import type { Action, Target } from "../plan/types.js";
 import { describeAction, executeAction, navigate, type ActionContext } from "../runtime/actions.js";
 import { ConfigError, DriftError, InfraError, StepFailedError } from "../runtime/errors.js";
-import { recordTarget, statelessTarget } from "../runtime/locators.js";
+import { candidateLocators, isStatelessPattern, locatorText, recordTarget, statelessTarget } from "../runtime/locators.js";
 import { capturePageState, type ElementInfo, type PageState } from "../runtime/page-state.js";
 import { PLANNER_SYSTEM, PLANNER_TOOLS, renderPageState } from "./prompts.js";
 import type { LlmSession } from "./session.js";
@@ -239,7 +239,18 @@ async function performTool(
       if (args.ref !== undefined) {
         // Waits replay on later runs with different data: never key them on an observed value.
         const el = elementByRef(state, args);
-        t = statelessTarget(await recordTarget(page, el), input.goal, el);
+        try {
+          t = statelessTarget(await recordTarget(page, el), input.goal, el);
+        } catch (err) {
+          if (!(err instanceof DriftError) || state_ !== "hidden") throw err;
+          // The element (a spinner, "Thinking…") vanished between the snapshot and now: the wait
+          // is already satisfied. Record it from the captured attributes so replays keep waiting.
+          // Positional CSS is excluded: once the element is gone, its position belongs to whatever
+          // replaced it (the reply bubble), and a hidden-wait on that would never finish.
+          const locators = candidateLocators(el).filter((l) => l.by !== "css" && isStatelessPattern(locatorText(l), input.goal));
+          if (locators.length === 0) throw err;
+          t = { locators, description: `${el.role ?? el.tag}${el.name ? ` "${el.name}"` : ""}` };
+        }
       } else {
         const text = strArg(args, "text");
         if (state_ === "visible" && !input.goal.toLowerCase().includes(text.toLowerCase())) {
