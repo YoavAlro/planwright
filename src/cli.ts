@@ -25,7 +25,7 @@ Options:
       --allow-drift     With --ci, report drift as a warning and exit 0
       --frozen          Never call the LLM for Given/When steps; missing/drifted plans fail
       --replan          Ignore cached plans and write fresh ones
-      --no-cache        Plan every step from scratch; read and write no plan files
+      --no-cache        Plan every step from scratch; read and write no plan files (not with --frozen/--replan/plan)
       --headed          Show the browser
       --base-url <url>  Override baseURL
       --model <id>      Model for the default Anthropic provider
