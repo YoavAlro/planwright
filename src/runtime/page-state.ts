@@ -54,7 +54,10 @@ function collectElements(args: { testIdAttribute: string; maxInteractive: number
     const style = getComputedStyle(el);
     return style.visibility !== "hidden" && style.display !== "none" && Number(style.opacity) !== 0;
   };
-  const clean = (s: string | null | undefined, max = 80): string | undefined => {
+  // Display limits for names and texts; a shortened value is flagged and never used as a locator.
+  const NAME_MAX = 80;
+  const TEXT_MAX = 120;
+  const clean = (s: string | null | undefined, max = NAME_MAX): string | undefined => {
     if (!s) return undefined;
     const t = s.replace(/\s+/g, " ").trim();
     if (!t) return undefined;
@@ -165,8 +168,8 @@ function collectElements(args: { testIdAttribute: string; maxInteractive: number
     const role = implicitRole(el);
     const label = labelOf(el);
     const full = (v: string | null | undefined) => (v ?? "").replace(/\s+/g, " ").trim();
-    const text = clean((el as HTMLElement).innerText, 120);
-    const textTruncated = full((el as HTMLElement).innerText).length > 120 || undefined;
+    const text = clean((el as HTMLElement).innerText, TEXT_MAX);
+    const textTruncated = full((el as HTMLElement).innerText).length > TEXT_MAX || undefined;
     const rawName =
       [
         el.getAttribute("aria-label"),
@@ -180,7 +183,7 @@ function collectElements(args: { testIdAttribute: string; maxInteractive: number
         .map(full)
         .find((v) => v.length > 0) ?? "";
     const name = clean(rawName);
-    const nameTruncated = rawName.length > 80 || undefined;
+    const nameTruncated = rawName.length > NAME_MAX || undefined;
     return {
       ref,
       tag,

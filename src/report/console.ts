@@ -34,7 +34,7 @@ export class ConsoleReporter {
     }
   }
 
-  runEnd(result: RunResult, opts: { ci: boolean; allowDrift: boolean; outputDir: string; noCache?: boolean }): void {
+  runEnd(result: RunResult, opts: { ci: boolean; allowDrift: boolean; outputDir: string; noCache: boolean }): void {
     const passed = result.scenarios.filter((s) => s.status === "passed").length;
     const failed = result.scenarios.length - passed;
     if (result.fatal) this.write(`\n${pc.red(pc.bold(result.fatal))}\n`);

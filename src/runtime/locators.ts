@@ -133,10 +133,10 @@ export function isGroundedPattern(pattern: string, stepText: string): boolean {
     .replace(/\[[^\]]*\]|\{[^}]*\}|\(\?[:=!<]+/g, " ")
     .match(/[a-zA-Z]{3,}/g);
   if (!words) return true;
-  const allowed = (stepText.toLowerCase().match(/[a-z]{3,}/g) ?? []);
+  const allowed = stepText.toLowerCase().match(/[a-z]{3,}/g) ?? [];
   return words.every((w) => {
     const word = w.toLowerCase();
-    return allowed.some((a) => a === word || (word.length >= 4 && a.length >= 4 && (a.startsWith(word.slice(0, 4)) && word.startsWith(a.slice(0, 4)))));
+    return allowed.some((a) => a === word || (word.length >= 4 && a.length >= 4 && a.slice(0, 4) === word.slice(0, 4)));
   });
 }
 
