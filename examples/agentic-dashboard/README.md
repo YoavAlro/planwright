@@ -103,6 +103,8 @@ Input tokens include prompt-cache reads and writes. Real Claude found weak spots
 - **Value-only targets:** Claude pointed checks at the element holding the value (the KPI number, the chat bubble). Those targets now fall back to position and stable class names instead of being dropped.
 - **Waiting on result text:** Claude waited for the reply's exact text, which pinned a changing value. Waits on page text are now rejected.
 - **Over-fitted patterns:** Claude copied one phrasing of a generated reply into a pattern (`created #\d+`). Patterns may now only use words from the assertion, match case-insensitively, and on a heal the failed pattern is fed back so the next one generalizes.
+- **Vanishing indicators:** "Thinking…" disappeared while the model was still deciding to wait for it. The hidden-wait is now recorded from the captured element, so replays still wait.
+- **Premature `done`:** a model claimed success on the blank start page, or on a 404 it reached by guessing `/dashboard`. `done` on a blank page is refused; on an HTTP error page it is refused once with a hint to use the app's navigation (a step that is about the error page can still finish there).
 
 ### Judge tone locally with Laya (zero LLM calls)
 

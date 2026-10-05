@@ -148,7 +148,7 @@ Drift always writes the updated plans to disk and produces `planwright-results/d
 | `--allow-drift` | With `--ci`, report drift but exit 0 |
 | `--frozen` | Never call the LLM for `Given`/`When`. A missing or drifted plan fails the run (cheap, fully deterministic). `judge` assertions still use the LLM. |
 | `--replan` / `planwright plan` | Ignore cached plans and plan everything again, writing the new plans. Identical results are not reported as drift. |
-| `--no-cache` | Pure agent mode: plan every step from scratch, and read and write no plan files. Useful for an agent-only baseline or a one-off run that must not touch the repo. Cannot be combined with `--frozen`. |
+| `--no-cache` | Pure agent mode: plan every step from scratch, and read and write no plan files. Useful for an agent-only baseline or a one-off run that must not touch the repo. Cannot be combined with `--frozen`, `--replan` or `planwright plan`. |
 | `-t, --tags "@smoke and not @slow"` | Tag filter (`,` = or) |
 | `--headed`, `--base-url`, `--model` | Show the browser, override baseURL, pick the default provider's model |
 
@@ -221,7 +221,7 @@ llm: google({ model: "<gemini model>", vertex: { project: "my-proj", location: "
 
 The Anthropic adapter enables server-side refusal fallbacks by default (`fallbacks: "default"`). Pass `fallbacks: false` to turn them off, for example when a proxy rejects the beta header.
 
-`claudeCli()` runs each request as one isolated `claude -p` turn: Claude Code's own tools, settings, MCP servers and session history are switched off, tool calls come back as `--json-schema` structured output, and screenshots go in as image blocks. It runs on whatever the CLI is logged in with, a Claude subscription included.
+`claudeCli()` runs each request as one isolated `claude -p` turn: Claude Code's own tools, settings, MCP servers and session history are switched off, tool calls come back as `--json-schema` structured output, and screenshots go in as image blocks. It runs on whatever the CLI is logged in with, a Claude subscription included. To diagnose a slow or odd call, set `PLANWRIGHT_CLI_LOG=<dir>` (or `logDir`): every call is written there as JSON with its arguments, prompt text, raw result and timing.
 
 A provider implements one method, `complete(request) → { toolCall?, text?, usage }`. Requests are single-turn (state and history as text, at most one screenshot), so adapters stay small. `ScriptedProvider` is a deterministic test double for your own tests.
 
