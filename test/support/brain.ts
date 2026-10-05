@@ -11,6 +11,8 @@ export interface BrainOptions {
   pinCounterValue?: boolean;
   /** Type the literal secret instead of the ${env.X} reference. */
   typeLiteralSecret?: boolean;
+  /** Claim "done" on the blank start page, like a model that never saw the page state. */
+  prematureDone?: boolean;
 }
 
 const find = (els: ElementInfo[], pred: (e: ElementInfo) => boolean) => els.find(pred);
@@ -48,6 +50,9 @@ export function demoBrain(options: BrainOptions = {}) {
     }
 
     // Planning.
+    if (options.prematureDone && meta.state.url === "about:blank" && !meta.history.some((h) => h.tool === "done")) {
+      return { name: "done", input: { summary: "nothing to do" } };
+    }
     const done = (summary: string): LlmToolCall => ({ name: "done", input: { summary } });
     const okTools = meta.history.filter((h) => h.result.startsWith("ok")).map((h) => h.tool);
     const healedTools = (meta.healing?.executed ?? []).map((s) => s.split(" ")[0]);

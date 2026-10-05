@@ -165,6 +165,15 @@ describe("gherkin features, secrets, extensibility", () => {
     expect(project.readPlan("fresh.feature")).toBe(before);
   });
 
+  it("a premature done on a blank page is rejected and the agent continues", async () => {
+    const project = createProject(demo.url, { prematureDone: true });
+    project.writeFeature("blank.feature", "Feature: Blank\n  Scenario: Blank\n    Given I am on the task board\n    Then the open tasks counter is shown\n");
+    const result = await project.run();
+    expect(result.exitCode).toBe(0);
+    const plan = JSON.parse(project.readPlan("blank.feature"));
+    expect(plan.scenarios.Blank.steps[0].actions.length).toBeGreaterThan(0);
+  });
+
   it("tag filters select scenarios", async () => {
     const project = createProject(demo.url);
     project.writeFeature(

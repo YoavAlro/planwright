@@ -1,4 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 import { InfraError } from "../runtime/errors.js";
@@ -13,7 +15,14 @@ export interface ClaudeCliOptions {
   timeoutMs?: number;
   /** Extra CLI arguments, appended last. */
   extraArgs?: string[];
+  /**
+   * Write every call (args, prompt text, raw CLI result, stderr, timing) as JSON into this
+   * directory, for diagnosing CLI behaviour. Default: the PLANWRIGHT_CLI_LOG env var.
+   */
+  logDir?: string;
 }
+
+let callCounter = 0;
 
 /**
  * One structured answer: which tool, with which input. The CLI turns this into a tool
@@ -103,6 +112,29 @@ export class ClaudeCliProvider implements LlmProvider {
       },
     };
 
+    const logDir = this.options.logDir ?? process.env.PLANWRIGHT_CLI_LOG;
+    const started = Date.now();
+    const log = (entry: Record<string, unknown>) => {
+      if (!logDir) return;
+      mkdirSync(logDir, { recursive: true });
+      const n = String(++callCounter).padStart(3, "0");
+      writeFileSync(
+        join(logDir, `${n}-${request.purpose}.json`),
+        JSON.stringify(
+          {
+            purpose: request.purpose,
+            durationMs: Date.now() - started,
+            args: args.map((a) => (a.length > 400 ? `${a.slice(0, 400)}…(${a.length} chars)` : a)),
+            prompt: request.content.filter((c) => c.type === "text").map((c) => (c as { text: string }).text.slice(0, 4000)),
+            images: request.content.filter((c) => c.type === "image").length,
+            ...entry,
+          },
+          null,
+          2,
+        ),
+      );
+    };
+
     return new Promise((resolve, reject) => {
       // Run outside the project so no CLAUDE.md or project settings leak into the prompt.
       const child = spawn(this.command, args, { cwd: tmpdir(), stdio: ["pipe", "pipe", "pipe"] });
@@ -110,6 +142,7 @@ export class ClaudeCliProvider implements LlmProvider {
       let stderr = "";
       const timer = setTimeout(() => {
         child.kill("SIGKILL");
+        log({ timedOut: true, stderr: stderr.slice(-2000), stdoutTail: stdout.slice(-3000) });
         reject(new InfraError(`claude CLI timed out after ${this.options.timeoutMs ?? 180_000}ms`));
       }, this.options.timeoutMs ?? 180_000);
       child.stdout.on("data", (c: Buffer) => (stdout += c.toString()));
@@ -120,6 +153,8 @@ export class ClaudeCliProvider implements LlmProvider {
       });
       child.on("close", (code) => {
         clearTimeout(timer);
+        const lastLines = stdout.trim().split("\n").slice(-3);
+        log({ exitCode: code, stderr: stderr.slice(-2000), lastStdoutLines: lastLines.map((l) => l.slice(0, 3000)) });
         const result = stdout
           .split("\n")
           .map((line) => {

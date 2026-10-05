@@ -159,6 +159,13 @@ export async function planStep(input: PlanStepInput): Promise<PlanStepOutput> {
     }
 
     if (call.name === "done") {
+      // Nothing can be achieved on a blank page; a "done" here means the model did not see the state.
+      if (state.url === "about:blank" && state.elements.length === 0) {
+        const result = "ERROR: the page is blank (about:blank); nothing has been done yet. Navigate first.";
+        turns.push({ turn, url: state.url, tool: call.name, input: call.input, result });
+        history.push({ tool: call.name, input: call.input, result });
+        continue;
+      }
       turns.push({ turn, url: state.url, tool: call.name, input: call.input, result: "done" });
       return { actions, summary: String(call.input.summary ?? ""), turns };
     }

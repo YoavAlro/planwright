@@ -87,6 +87,7 @@ No API key needed: `claudeCli()` drives the logged-in `claude` CLI.
 cd examples/agentic-dashboard
 PLANWRIGHT_LLM=claude-cli npx planwright run               # replay the committed plans (PLANWRIGHT_MODEL=opus to pick a model)
 PLANWRIGHT_LLM=claude-cli npx planwright run --no-cache    # plan every step from scratch; plan files are left untouched
+PLANWRIGHT_CLI_LOG=./cli-log PLANWRIGHT_LLM=claude-cli npx planwright run --no-cache   # also log every CLI call to ./cli-log
 ```
 
 Measured with `PLANWRIGHT_LLM=claude-cli npm run example:bench` ([`results/benchmark-claude-cli.md`](results/benchmark-claude-cli.md)):
