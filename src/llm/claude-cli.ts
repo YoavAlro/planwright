@@ -22,8 +22,6 @@ export interface ClaudeCliOptions {
   logDir?: string;
 }
 
-let callCounter = 0;
-
 /**
  * One structured answer: which tool, with which input. The CLI turns this into a tool
  * definition, which may not use a top-level anyOf, so per-tool argument schemas go in
@@ -70,10 +68,15 @@ export class ClaudeCliProvider implements LlmProvider {
   readonly name = "claude-cli";
   readonly model: string;
   private readonly command: string;
+  private readonly timeoutMs: number;
+  /** Log files are named `<run stamp>-<call #>-<purpose>.json`, so runs into one directory never overwrite each other. */
+  private readonly logStamp = new Date().toISOString().replace(/[:.]/g, "-");
+  private calls = 0;
 
   constructor(private readonly options: ClaudeCliOptions = {}) {
     this.model = options.model ?? "cli-default";
     this.command = options.command ?? "claude";
+    this.timeoutMs = options.timeoutMs ?? 180_000;
   }
 
   checkCredentials(): string | null {
@@ -114,12 +117,12 @@ export class ClaudeCliProvider implements LlmProvider {
 
     const logDir = this.options.logDir ?? process.env.PLANWRIGHT_CLI_LOG;
     const started = Date.now();
+    const n = String(++this.calls).padStart(3, "0");
     const log = (entry: Record<string, unknown>) => {
       if (!logDir) return;
       mkdirSync(logDir, { recursive: true });
-      const n = String(++callCounter).padStart(3, "0");
       writeFileSync(
-        join(logDir, `${n}-${request.purpose}.json`),
+        join(logDir, `${this.logStamp}-${n}-${request.purpose}.json`),
         JSON.stringify(
           {
             purpose: request.purpose,
@@ -140,19 +143,30 @@ export class ClaudeCliProvider implements LlmProvider {
       const child = spawn(this.command, args, { cwd: tmpdir(), stdio: ["pipe", "pipe", "pipe"] });
       let stdout = "";
       let stderr = "";
+      // A killed or failed child still emits "close": only the first outcome counts.
+      let settled = false;
+      const settle = () => {
+        if (settled) return false;
+        settled = true;
+        clearTimeout(timer);
+        return true;
+      };
       const timer = setTimeout(() => {
+        if (!settle()) return;
         child.kill("SIGKILL");
         log({ timedOut: true, stderr: stderr.slice(-2000), stdoutTail: stdout.slice(-3000) });
-        reject(new InfraError(`claude CLI timed out after ${this.options.timeoutMs ?? 180_000}ms`));
-      }, this.options.timeoutMs ?? 180_000);
+        reject(new InfraError(`claude CLI timed out after ${this.timeoutMs}ms`));
+      }, this.timeoutMs);
       child.stdout.on("data", (c: Buffer) => (stdout += c.toString()));
       child.stderr.on("data", (c: Buffer) => (stderr += c.toString()));
+      // The CLI may exit before reading stdin (bad flag, not logged in); its exit is reported on "close".
+      child.stdin.on("error", () => undefined);
       child.on("error", (err) => {
-        clearTimeout(timer);
+        if (!settle()) return;
         reject(new InfraError(`Could not start \`${this.command}\`: ${err.message}`));
       });
       child.on("close", (code) => {
-        clearTimeout(timer);
+        if (!settle()) return;
         const lastLines = stdout.trim().split("\n").slice(-3);
         log({ exitCode: code, stderr: stderr.slice(-2000), lastStdoutLines: lastLines.map((l) => l.slice(0, 3000)) });
         const result = stdout
@@ -185,8 +199,9 @@ export class ClaudeCliProvider implements LlmProvider {
           const { tool, input, ...rest } = out;
           const args = input && Object.keys(input).length ? input : rest;
           resolve({ toolCall: { name: tool, input: args }, usage });
+        } else {
+          resolve({ text: result.result ?? "", usage });
         }
-        else resolve({ text: result.result ?? "", usage });
       });
       child.stdin.end(JSON.stringify(message) + "\n");
     });

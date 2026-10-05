@@ -94,6 +94,10 @@ export function demoBrain(options: BrainOptions = {}) {
       return { name: "click", input: { ref: byName(els, "button", /sign in/i)!.ref } };
     }
 
+    if (/open a page that does not exist/.test(meta.goal)) {
+      return url.endsWith("/no-such-page") ? done("on the missing page") : { name: "navigate", input: { url: "/no-such-page" } };
+    }
+
     if (/open my account page/.test(meta.goal)) {
       return url.endsWith("/account") ? done("on account page") : { name: "navigate", input: { url: "/account" } };
     }

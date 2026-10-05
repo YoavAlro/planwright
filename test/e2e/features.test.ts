@@ -1,7 +1,8 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { startDemo, type DemoServer } from "../../demo/server.js";
-import { doctor, resolveConfig, type ScenarioContext } from "../../src/index.js";
+import { doctor, resolveConfig, ScriptedProvider, type ScenarioContext } from "../../src/index.js";
+import { demoBrain } from "../support/brain.js";
 import { createProject } from "../support/harness.js";
 
 describe("gherkin features, secrets, extensibility", () => {
@@ -163,6 +164,12 @@ describe("gherkin features, secrets, extensibility", () => {
     expect(fresh.drift).toEqual([]);
     expect(fresh.plansWritten).toEqual([]);
     expect(project.readPlan("fresh.feature")).toBe(before);
+
+    for (const conflict of [{ frozen: true }, { replan: true }]) {
+      const bad = await project.run({ noCache: true, ...conflict });
+      expect(bad.exitCode).toBe(3);
+      expect(bad.fatal).toMatch(/--no-cache/);
+    }
   });
 
   it("a premature done on a blank page is rejected and the agent continues", async () => {
@@ -181,6 +188,30 @@ describe("gherkin features, secrets, extensibility", () => {
     expect(result.exitCode).toBe(0);
     const plan = JSON.parse(project.readPlan("guess.feature"));
     expect(JSON.stringify(plan.scenarios.Guess.steps[0].actions)).toContain("Tasks");
+  });
+
+  it("done on an error page is accepted when insisted on, so steps about error pages still plan", async () => {
+    const project = createProject(demo.url);
+    project.writeFeature("missing.feature", "Feature: Missing\n  Scenario: Missing\n    When I open a page that does not exist\n");
+    const result = await project.run();
+    expect(result.exitCode).toBe(0);
+    // navigate, done (refused once: HTTP 404), done again (accepted).
+    expect(project.provider.callsFor("does not exist")).toBe(3);
+    const plan = JSON.parse(project.readPlan("missing.feature"));
+    expect(plan.scenarios.Missing.steps[0].actions).toEqual([{ type: "navigate", url: "/no-such-page" }]);
+  });
+
+  it("a prose-only answer to an assertion fails the step; a malformed verdict is an infra error", async () => {
+    const project = createProject(demo.url);
+    project.writeFeature("verdict.feature", "Feature: Verdict\n  Scenario: Verdict\n    Given I am on the task board\n    Then the open tasks counter is shown\n");
+    const brain = demoBrain();
+    const answering = (verdict: { name: string; input: Record<string, unknown> } | undefined) =>
+      new ScriptedProvider((meta) => (meta.kind === "plan" ? brain(meta) : verdict));
+    const prose = await project.run({}, { llm: answering(undefined) });
+    expect(prose.exitCode).toBe(1);
+    expect(prose.scenarios[0]?.steps[1]?.error).toMatch(/No verdict returned/);
+    const malformed = await project.run({}, { llm: answering({ name: "verdict", input: { pass: true } }) });
+    expect(malformed.exitCode).toBe(3);
   });
 
   it("tag filters select scenarios", async () => {

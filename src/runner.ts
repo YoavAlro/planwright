@@ -98,6 +98,7 @@ export async function run(options: RunOptions): Promise<RunResult> {
 
   try {
     if (options.noCache && options.frozen) throw new ConfigError("--no-cache and --frozen contradict each other: one plans everything, the other forbids planning.");
+    if (options.noCache && options.replan) throw new ConfigError("--no-cache writes no plans, so it cannot be combined with --replan or `planwright plan`.");
     const featurePaths = discoverFeatures(options.paths?.length ? options.paths : config.features);
     if (featurePaths.length === 0) throw new ConfigError("No .feature files found.");
     const features = featurePaths.map((p) => parseFeatureFile(p, config.rootDir));

@@ -1,4 +1,4 @@
-import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -59,6 +59,20 @@ describe("claudeCli provider", () => {
     const fake = fakeClaude({ is_error: false, structured_output: { tool: "verdict", input: {}, pass: true, confidence: 0.9, evidence: "ok" } });
     const res = await claudeCli({ command: fake.command }).complete(request);
     expect(res.toolCall).toEqual({ name: "verdict", input: { pass: true, confidence: 0.9, evidence: "ok" } });
+  });
+
+  it("a timed-out call rejects once as an infra error and is logged once", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "fake-claude-"));
+    const command = join(dir, "claude");
+    writeFileSync(command, "#!/usr/bin/env node\nsetTimeout(() => {}, 10_000);\n");
+    chmodSync(command, 0o755);
+    const logDir = join(dir, "log");
+    await expect(claudeCli({ command, timeoutMs: 300, logDir }).complete(request)).rejects.toThrow(/timed out after 300ms/);
+    await new Promise((r) => setTimeout(r, 200)); // let the killed child's "close" fire
+    const files = readdirSync(logDir);
+    expect(files).toHaveLength(1);
+    expect(files[0]).toMatch(/-001-plan\.json$/);
+    expect(JSON.parse(readFileSync(join(logDir, files[0]!), "utf8"))).toMatchObject({ timedOut: true });
   });
 
   it("reports CLI errors as infra errors", async () => {

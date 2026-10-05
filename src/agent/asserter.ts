@@ -11,7 +11,6 @@ import type { Judge, Verdict } from "../judge/types.js";
 import type { LlmSession } from "./session.js";
 
 export type { Verdict } from "../judge/types.js";
-export { isStatelessPattern } from "../runtime/locators.js";
 
 /** One single-literal `kind` per member, so `meta.kind` checks narrow cleanly in user code. */
 export type AssertRequestMeta =
@@ -40,27 +39,28 @@ export interface AssertInput {
   judge?: Judge;
 }
 
-/** A verdict needs at least a boolean `pass`; anything else is a malformed model answer, not a judgement. */
+/** A verdict needs a boolean `pass` and a numeric `confidence`; anything else is a malformed answer, not a judgement. */
 function readVerdict(input: Record<string, unknown> | undefined): Verdict | undefined {
-  if (!input || typeof input.pass !== "boolean") return undefined;
-  return {
-    pass: input.pass,
-    confidence: typeof input.confidence === "number" ? input.confidence : 0,
-    evidence: typeof input.evidence === "string" ? input.evidence : "",
-  };
+  if (!input || typeof input.pass !== "boolean" || typeof input.confidence !== "number") return undefined;
+  return { pass: input.pass, confidence: input.confidence, evidence: typeof input.evidence === "string" ? input.evidence : "" };
 }
 
-/** Asks for a verdict, retrying once on a malformed answer. Two malformed answers are a tooling problem (exit 3). */
-async function requestVerdict(session: LlmSession, request: Parameters<LlmSession["complete"]>[0]) {
+/**
+ * Asks for a verdict, retrying once on an unusable answer. A model that keeps answering in
+ * prose (or refuses) has not confirmed the assertion: that is a failed verdict. A model that
+ * keeps returning a malformed verdict is a tooling problem (InfraError, exit 3).
+ */
+async function requestVerdict(session: LlmSession, request: Parameters<LlmSession["complete"]>[0], goal: string) {
   let last: Awaited<ReturnType<LlmSession["complete"]>> | undefined;
   for (let attempt = 0; attempt < 2; attempt++) {
     last = await session.complete(request);
     const verdict = readVerdict(last.toolCall?.input);
     if (verdict) return { verdict, raw: last.toolCall?.input };
   }
-  throw new InfraError(
-    `The model returned no usable verdict for "${(request.meta as AssertRequestMeta).goal}": ${JSON.stringify(last?.toolCall ?? last?.text ?? null).slice(0, 300)}`,
-  );
+  if (!last?.toolCall) {
+    return { verdict: { pass: false, confidence: 0, evidence: `No verdict returned: ${last?.text || "(empty)"}` }, raw: undefined };
+  }
+  throw new InfraError(`The model returned no usable verdict for "${goal}": ${JSON.stringify(last.toolCall).slice(0, 300)}`);
 }
 
 function withFlag(flags: string | undefined, flag: string): string {
@@ -121,7 +121,7 @@ async function compileCheck(page: Page, state: PageState, raw: ProposedCheck, go
     case "text":
       if (!pattern) throw new DriftError("text check needs a pattern");
       // Wording is matched case-insensitively: "Ticket #12" and "ticket #12" state the same fact.
-      return { kind: "text", target: target!, pattern, flags: /[a-zA-Z]/.test(pattern.replace(/\\[a-zA-Z]/g, "")) ? withFlag(raw.flags, "i") : raw.flags ?? "" };
+      return { kind: "text", target: target!, pattern, flags: withFlag(raw.flags, "i") };
     case "url":
     case "title":
       if (!pattern) throw new DriftError(`${raw.kind} check needs a pattern`);
@@ -152,7 +152,7 @@ export async function judge(input: AssertInput): Promise<Verdict> {
     content: userContent(input.goal, state),
     tools: [JUDGE_TOOL],
     meta,
-  });
+  }, input.goal);
   return { ...verdict, pass: verdict.pass && verdict.confidence >= input.minConfidence };
 }
 
@@ -184,7 +184,7 @@ export async function compileAssertion(
     content: userContent(input.goal, state, note),
     tools: [ASSERT_TOOL],
     meta,
-  });
+  }, input.goal);
   if (!verdict.pass || verdict.confidence < input.minConfidence) {
     return { verdict: { ...verdict, pass: false }, actions: [], rejected: [] };
   }

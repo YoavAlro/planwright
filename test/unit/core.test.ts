@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { isStatelessPattern } from "../../src/agent/asserter.js";
 import { matchesTags, parseFeatureSource } from "../../src/gherkin/parse.js";
 import { emptyPlan, serializePlan } from "../../src/plan/store.js";
 import { resolveTemplate, stepHash, toReferences } from "../../src/plan/template.js";
 import { renderJUnit } from "../../src/report/files.js";
 import { ConfigError } from "../../src/runtime/errors.js";
-import { candidateLocators, isGroundedPattern } from "../../src/runtime/locators.js";
+import { candidateLocators, isGroundedPattern, isStatelessPattern } from "../../src/runtime/locators.js";
 
 describe("templates", () => {
   const scope = { env: { PASSWORD: "s3cr3t-pw" }, params: { name: "Call mom", n: "1" }, vars: { runId: "run-42" } };
