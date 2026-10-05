@@ -13,6 +13,8 @@ export interface BrainOptions {
   typeLiteralSecret?: boolean;
   /** Claim "done" on the blank start page, like a model that never saw the page state. */
   prematureDone?: boolean;
+  /** Guess a URL, land on a 404, and claim "done" there (seen with real models). */
+  guessWrongPath?: boolean;
 }
 
 const find = (els: ElementInfo[], pred: (e: ElementInfo) => boolean) => els.find(pred);
@@ -58,6 +60,9 @@ export function demoBrain(options: BrainOptions = {}) {
     const healedTools = (meta.healing?.executed ?? []).map((s) => s.split(" ")[0]);
     const did = (tool: string) => okTools.includes(tool) || healedTools.includes(tool);
 
+    if (options.guessWrongPath && /on the task board/.test(meta.goal) && !meta.history.some((h) => h.result.startsWith("ERROR"))) {
+      return url.endsWith("/taskboard") ? done("on the task board") : { name: "navigate", input: { url: "/taskboard" } };
+    }
     if (/on the task board/.test(meta.goal)) {
       if (url.endsWith("/tasks")) return done("on tasks page");
       const link = byName(els, "link", /^tasks$/i);

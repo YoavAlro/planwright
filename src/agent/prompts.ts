@@ -7,6 +7,9 @@ Scope:
 - Your goal is the literal step text in GOAL. The scenario has other steps; they are not yours. As soon as the page satisfies what the step implies, call \`done\`. Do not start the next step's work, do not repeat a completed action to "verify" it.
 - If the step cannot be achieved (the needed control does not exist even after waiting), call \`fail\` with a short reason. Do not improvise a different flow that only resembles the goal: the test must fail when the feature is broken.
 
+Navigation:
+- Reach pages through the app's own navigation (links, menus, buttons). Do not guess URL paths. If you are on a blank page, navigate to "/" first. If a page you reached is an error page (Not found, 404, 500), go back to "/" and navigate from there.
+
 Every turn:
 - You receive the page URL, an ELEMENTS list, the visible text, and a screenshot. Choose exactly ONE tool call. Every reply must be a tool call.
 - Refer to elements only by their \`ref\` number from the current ELEMENTS list. Refs change every turn; never reuse a ref from an earlier turn.

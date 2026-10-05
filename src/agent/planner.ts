@@ -111,6 +111,21 @@ export async function planStep(input: PlanStepInput): Promise<PlanStepOutput> {
     actionTimeoutMs: input.actionTimeoutMs,
   };
   const deadline = Date.now() + input.timeoutMs;
+  // HTTP status of the current main-frame document, so "done" on an error page can be refused.
+  let documentStatus: { url: string; status: number } | undefined;
+  const onResponse = (response: import("playwright").Response) => {
+    if (response.request().isNavigationRequest() && response.frame() === page.mainFrame()) {
+      documentStatus = { url: response.url(), status: response.status() };
+    }
+  };
+  page.on("response", onResponse);
+  try {
+    return await planLoop();
+  } finally {
+    page.off("response", onResponse);
+  }
+
+  async function planLoop(): Promise<PlanStepOutput> {
   let textOnlyReplies = 0;
 
   for (let turn = 1; turn <= input.maxTurns; turn++) {
@@ -127,6 +142,7 @@ export async function planStep(input: PlanStepInput): Promise<PlanStepOutput> {
     };
     const text = [
       `GOAL: ${goal}`,
+      input.baseURL ? `APP BASE URL: ${input.baseURL} (the app's home is "/")` : "",
       `SCENARIO: ${input.scenarioName}`,
       input.previousSteps.length ? `EARLIER STEPS (already done, not yours):\n${input.previousSteps.map((s) => `- ${s}`).join("\n")}` : "",
       meta.healing
@@ -160,8 +176,14 @@ export async function planStep(input: PlanStepInput): Promise<PlanStepOutput> {
 
     if (call.name === "done") {
       // Nothing can be achieved on a blank page; a "done" here means the model did not see the state.
-      if (state.url === "about:blank" && state.elements.length === 0) {
-        const result = "ERROR: the page is blank (about:blank); nothing has been done yet. Navigate first.";
+      const refusal =
+        state.url === "about:blank" && state.elements.length === 0
+          ? "the page is blank (about:blank); nothing has been done yet. Navigate first."
+          : documentStatus && documentStatus.status >= 400 && documentStatus.url === state.url
+            ? `this page is an HTTP ${documentStatus.status} error page, not the goal. Go back to "/" and use the app's own navigation.`
+            : undefined;
+      if (refusal) {
+        const result = `ERROR: ${refusal}`;
         turns.push({ turn, url: state.url, tool: call.name, input: call.input, result });
         history.push({ tool: call.name, input: call.input, result });
         continue;
@@ -187,6 +209,7 @@ export async function planStep(input: PlanStepInput): Promise<PlanStepOutput> {
     history.push({ tool: call.name, input: call.input, result });
   }
   throw withTurns(new StepFailedError(`Agent did not finish "${goal}" within ${input.maxTurns} turns / ${input.timeoutMs}ms.`), turns);
+  }
 }
 
 function withTurns(err: StepFailedError, turns: PlannerTurn[]): StepFailedError {

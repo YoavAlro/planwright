@@ -174,6 +174,15 @@ describe("gherkin features, secrets, extensibility", () => {
     expect(plan.scenarios.Blank.steps[0].actions.length).toBeGreaterThan(0);
   });
 
+  it("done on an HTTP error page is refused, so a guessed URL can't pass a step", async () => {
+    const project = createProject(demo.url, { guessWrongPath: true });
+    project.writeFeature("guess.feature", "Feature: Guess\n  Scenario: Guess\n    Given I am on the task board\n    Then the open tasks counter is shown\n");
+    const result = await project.run();
+    expect(result.exitCode).toBe(0);
+    const plan = JSON.parse(project.readPlan("guess.feature"));
+    expect(JSON.stringify(plan.scenarios.Guess.steps[0].actions)).toContain("Tasks");
+  });
+
   it("tag filters select scenarios", async () => {
     const project = createProject(demo.url);
     project.writeFeature(
