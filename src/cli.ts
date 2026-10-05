@@ -24,7 +24,8 @@ Options:
       --ci              CI mode: exit 2 when plans were created or healed
       --allow-drift     With --ci, report drift as a warning and exit 0
       --frozen          Never call the LLM for Given/When steps; missing/drifted plans fail
-      --replan          Ignore cached plans
+      --replan          Ignore cached plans and write fresh ones
+      --no-cache        Plan every step from scratch; read and write no plan files
       --headed          Show the browser
       --base-url <url>  Override baseURL
       --model <id>      Model for the default Anthropic provider
@@ -45,6 +46,7 @@ async function main(argv: string[]): Promise<number> {
       "allow-drift": { type: "boolean" },
       frozen: { type: "boolean" },
       replan: { type: "boolean" },
+      "no-cache": { type: "boolean" },
       headed: { type: "boolean" },
       "base-url": { type: "string" },
       model: { type: "string" },
@@ -84,6 +86,7 @@ async function main(argv: string[]): Promise<number> {
         allowDrift: values["allow-drift"],
         frozen: values.frozen,
         replan: values.replan || command === "plan",
+        noCache: values["no-cache"],
       });
       return result.exitCode;
     }

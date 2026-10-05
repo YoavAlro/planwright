@@ -143,6 +143,28 @@ describe("gherkin features, secrets, extensibility", () => {
     expect(demo.tasks).toEqual(["Milk", "Milk"]);
   });
 
+  it("--no-cache plans every step from scratch and leaves plan files untouched", async () => {
+    const project = createProject(demo.url);
+    project.writeFeature(
+      "fresh.feature",
+      `Feature: Fresh
+  Scenario: Fresh
+    Given I am on the task board
+    When I add a task named "Milk"
+    Then I see the task "Milk" in the list
+`,
+    );
+    await project.run();
+    const before = project.readPlan("fresh.feature");
+    const fresh = await project.run({ ci: true, noCache: true });
+    expect(fresh.exitCode).toBe(0);
+    expect(fresh.scenarios[0]?.steps.every((s) => s.mode === "planned")).toBe(true);
+    expect(project.provider.calls.length).toBeGreaterThan(0);
+    expect(fresh.drift).toEqual([]);
+    expect(fresh.plansWritten).toEqual([]);
+    expect(project.readPlan("fresh.feature")).toBe(before);
+  });
+
   it("tag filters select scenarios", async () => {
     const project = createProject(demo.url);
     project.writeFeature(

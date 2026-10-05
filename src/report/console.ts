@@ -34,7 +34,7 @@ export class ConsoleReporter {
     }
   }
 
-  runEnd(result: RunResult, opts: { ci: boolean; allowDrift: boolean; outputDir: string }): void {
+  runEnd(result: RunResult, opts: { ci: boolean; allowDrift: boolean; outputDir: string; noCache?: boolean }): void {
     const passed = result.scenarios.filter((s) => s.status === "passed").length;
     const failed = result.scenarios.length - passed;
     if (result.fatal) this.write(`\n${pc.red(pc.bold(result.fatal))}\n`);
@@ -53,6 +53,7 @@ export class ConsoleReporter {
       );
     }
 
+    if (opts.noCache) this.write(pc.dim("\n--no-cache: every step was planned from scratch; no plan files were read or written.\n"));
     const usage = result.usage.calls
       ? `LLM: ${result.usage.calls} call(s), ${result.usage.inputTokens + result.usage.outputTokens} tokens`
       : "LLM: no calls";

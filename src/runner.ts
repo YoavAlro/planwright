@@ -10,7 +10,7 @@ import { LlmSession } from "./agent/session.js";
 import { discoverFeatures, type ResolvedConfig, type ScenarioContext, type ScenarioInfo, type StepDefinition } from "./config.js";
 import { matchesTags, parseFeatureFile, type ParsedFeature, type ParsedScenario, type ScenarioStep } from "./gherkin/parse.js";
 import { anthropic } from "./llm/anthropic.js";
-import { loadPlan, savePlan } from "./plan/store.js";
+import { emptyPlan, loadPlan, savePlan } from "./plan/store.js";
 import type { TemplateScope } from "./plan/template.js";
 import type { Action, FeaturePlan, PlannedStep, ScenarioPlan } from "./plan/types.js";
 import { ConsoleReporter } from "./report/console.js";
@@ -30,8 +30,13 @@ export interface RunOptions {
   allowDrift?: boolean;
   /** Never call the LLM for Given/When steps; a missing or drifted plan fails. */
   frozen?: boolean;
-  /** Ignore cached plans and plan every step again. */
+  /** Ignore cached plans and plan every step again (writes the new plans). */
   replan?: boolean;
+  /**
+   * Pure agent mode: plan every step from scratch and leave plan files untouched
+   * (nothing read, nothing written). Planning is not reported as drift.
+   */
+  noCache?: boolean;
   /** Console output sink. Default: process.stdout. Pass a no-op to silence. */
   write?: (text: string) => void;
 }
@@ -92,6 +97,7 @@ export async function run(options: RunOptions): Promise<RunResult> {
   for (const f of ["drift-report.md", "drift-report.json"]) rmSync(join(config.outputDir, f), { force: true });
 
   try {
+    if (options.noCache && options.frozen) throw new ConfigError("--no-cache and --frozen contradict each other: one plans everything, the other forbids planning.");
     const featurePaths = discoverFeatures(options.paths?.length ? options.paths : config.features);
     if (featurePaths.length === 0) throw new ConfigError("No .feature files found.");
     const features = featurePaths.map((p) => parseFeatureFile(p, config.rootDir));
@@ -106,7 +112,7 @@ export async function run(options: RunOptions): Promise<RunResult> {
     }
 
     for (const feature of features) {
-      const plan = loadPlan(feature.path);
+      const plan = options.noCache ? emptyPlan(feature.path) : loadPlan(feature.path);
       const next: FeaturePlan = { ...plan, scenarios: {} };
       const present = new Set(feature.scenarios.map((s) => s.key));
       for (const [key, value] of Object.entries(plan.scenarios)) if (present.has(key)) next.scenarios[key] = value;
@@ -124,11 +130,11 @@ export async function run(options: RunOptions): Promise<RunResult> {
           consoleReporter,
         });
         scenarios.push(result);
-        for (const s of result.steps) if (s.drift) drift.push(s.drift);
+        if (!options.noCache) for (const s of result.steps) if (s.drift) drift.push(s.drift);
         if (scenarioPlan.steps.length) next.scenarios[scenario.key] = scenarioPlan;
         else delete next.scenarios[scenario.key];
       }
-      if (savePlan(feature.path, next)) plansWritten.push(relative(config.rootDir, feature.path.replace(/\.feature$/, ".plan.json")));
+      if (!options.noCache && savePlan(feature.path, next)) plansWritten.push(relative(config.rootDir, feature.path.replace(/\.feature$/, ".plan.json")));
     }
   } catch (err) {
     fatal = (err as Error).message;
@@ -161,7 +167,7 @@ export async function run(options: RunOptions): Promise<RunResult> {
   await browser?.close().catch(() => undefined);
   await config.judge?.close?.().catch(() => undefined);
   writeReports(config, result);
-  consoleReporter.runEnd(result, { ci: !!options.ci, allowDrift: !!options.allowDrift, outputDir: config.outputDir });
+  consoleReporter.runEnd(result, { ci: !!options.ci, allowDrift: !!options.allowDrift, outputDir: config.outputDir, noCache: !!options.noCache });
   for (const r of config.reporters) await r.onRunEnd?.(result);
   return result;
 }

@@ -147,7 +147,8 @@ Drift always writes the updated plans to disk and produces `planwright-results/d
 | `--ci` | Drift exits 2 |
 | `--allow-drift` | With `--ci`, report drift but exit 0 |
 | `--frozen` | Never call the LLM for `Given`/`When`. A missing or drifted plan fails the run (cheap, fully deterministic). `judge` assertions still use the LLM. |
-| `--replan` / `planwright plan` | Ignore cached plans and plan everything again. Identical results are not reported as drift. |
+| `--replan` / `planwright plan` | Ignore cached plans and plan everything again, writing the new plans. Identical results are not reported as drift. |
+| `--no-cache` | Pure agent mode: plan every step from scratch, and read and write no plan files. Useful for an agent-only baseline or a one-off run that must not touch the repo. Cannot be combined with `--frozen`. |
 | `-t, --tags "@smoke and not @slow"` | Tag filter (`,` = or) |
 | `--headed`, `--base-url`, `--model` | Show the browser, override baseURL, pick the default provider's model |
 
