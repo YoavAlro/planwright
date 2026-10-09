@@ -1,5 +1,11 @@
 # Planwright
 
+**AI-written end-to-end tests that stop calling the AI once they pass.**
+
+![planwright replays a committed plan with no LLM calls, re-plans only the two steps a UI redesign broke, then replays again](docs/demo.gif)
+
+<sub>The bundled [example app](examples/agentic-dashboard/README.md) with its offline stand-in model: `npm run example`.</sub>
+
 Write end-to-end tests as Gherkin. An LLM agent figures out how to perform each step on your real app **once**, and planwright stores what it did as a plan next to the `.feature` file. Every later run replays that plan as plain Playwright: **no LLM calls**, fast and deterministic. When the UI changes and a step stops matching, planwright re-plans **only that step**, passes the run, and flags the drift so you can review and commit the new plan.
 
 ```gherkin

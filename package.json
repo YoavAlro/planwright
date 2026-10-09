@@ -8,6 +8,10 @@
     "type": "git",
     "url": "git+https://github.com/YoavAlro/planwright.git"
   },
+  "homepage": "https://github.com/YoavAlro/planwright#readme",
+  "bugs": {
+    "url": "https://github.com/YoavAlro/planwright/issues"
+  },
   "keywords": [
     "playwright",
     "gherkin",
@@ -52,7 +56,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && node -e \"require('node:fs').chmodSync('dist/cli.js', 0o755)\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "vitest run",

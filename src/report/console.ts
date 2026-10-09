@@ -1,3 +1,5 @@
+import { join, relative } from "node:path";
+
 import pc from "picocolors";
 
 import type { ScenarioInfo } from "../config.js";
@@ -49,7 +51,7 @@ export class ConsoleReporter {
         for (const a of d.newActions) this.write(`           ${pc.green(`+ ${describeAction(a)}`)}\n`);
       }
       this.write(
-        `  Updated plans: ${result.plansWritten.join(", ") || "(none)"}\n  Review and commit them. Report: ${opts.outputDir}/drift-report.md\n${bar}\n`,
+        `  Updated plans: ${result.plansWritten.join(", ") || "(none)"}\n  Review and commit them. Report: ${relative(process.cwd(), join(opts.outputDir, "drift-report.md"))}\n${bar}\n`,
       );
     }
 
