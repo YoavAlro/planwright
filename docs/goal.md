@@ -8,7 +8,7 @@ deterministically, re-plan only when the page drifts" tool. It stays generic: no
 code, endpoints or auth; those plug in through config (custom steps, hooks, context options).
 
 ## Repo & packaging
-- New public GitHub repo: `YoavAlro/planwright`. License: MIT. npm package `planwright`.
+- New public GitHub repo: `YoavAlro/planwright`. License: MIT. npm package `planwright-e2e` (npm reserves `planwright` as too close to `playwright`); the CLI is still `planwright`.
 - TypeScript, ESM, strict types, Node LTS. `playwright` as a peer dependency.
 - Standalone CLI is the primary surface: `planwright run`, `planwright plan`,
   `planwright list`, `planwright doctor`. No Playwright Test integration in v1.
