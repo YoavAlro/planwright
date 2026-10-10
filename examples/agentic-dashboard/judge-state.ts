@@ -1,4 +1,4 @@
-import type { PageState } from "planwright";
+import type { PageState } from "planwright-e2e";
 
 /**
  * Laya judges the chat transcript, not the whole page: with navigation and

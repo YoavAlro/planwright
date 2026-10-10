@@ -1,5 +1,5 @@
 {
-  "name": "planwright",
+  "name": "planwright-e2e",
   "version": "0.1.0",
   "description": "Gherkin → Playwright agent that plans once with an LLM, replays deterministically, and re-plans only the steps that drift.",
   "license": "MIT",

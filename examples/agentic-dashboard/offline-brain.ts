@@ -1,4 +1,4 @@
-import { ScriptedProvider, type LlmToolCall, type ScriptedRequestMeta } from "planwright";
+import { ScriptedProvider, type LlmToolCall, type ScriptedRequestMeta } from "planwright-e2e";
 
 /**
  * Offline stand-in for an LLM, so the example runs end to end without an API

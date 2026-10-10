@@ -56,15 +56,17 @@ features/tasks.feature › Add a task
 ## Quickstart
 
 ```bash
-npm install -D planwright playwright
+npm install -D planwright-e2e playwright
 npx playwright install chromium
 export ANTHROPIC_API_KEY=...        # default provider: Anthropic, model claude-opus-5-5
 ```
 
+The npm package is `planwright-e2e` (npm reserves names close to `playwright`); the command and the config file are still `planwright`.
+
 `planwright.config.ts`:
 
 ```ts
-import { defineConfig } from "planwright";
+import { defineConfig } from "planwright-e2e";
 
 export default defineConfig({
   baseURL: "http://localhost:3000",
@@ -129,8 +131,8 @@ Page content is passed to the model as untrusted data, and text in the page aime
 Steps stored as `judge` call the LLM on every run by default. You can hand them to any **Jev-compatible `system_one` decision model** instead. Each assertion becomes one `noul` question, and its calibrated P(true) decides the step. That moves the cost from API tokens to a local forward pass.
 
 ```ts
-import { layaJudge } from "planwright/judge/laya";   // npm i @receptron/laya
-import { systemOneJudge } from "planwright";
+import { layaJudge } from "planwright-e2e/judge/laya";   // npm i @receptron/laya
+import { systemOneJudge } from "planwright-e2e";
 
 judge: { using: layaJudge() }                                // Laya, local ONNX (~1.7 GB, downloaded on first use)
 judge: { using: layaJudge({ threshold: 0.8 }) }              // stricter: P(holds) ≥ 0.8
@@ -216,10 +218,10 @@ Ready-made patterns: [`examples/form-login`](examples/form-login/planwright.conf
 ## LLM providers
 
 ```ts
-import { anthropic } from "planwright";                 // default (claude-opus-5-5, ANTHROPIC_API_KEY)
-import { claudeCli } from "planwright";                 // your logged-in Claude Code CLI (`claude -p`), no API key
-import { openai } from "planwright/llm/openai";         // npm i openai
-import { google } from "planwright/llm/google";         // npm i @google/genai (Gemini API or Vertex)
+import { anthropic } from "planwright-e2e";           // default (claude-opus-5-5, ANTHROPIC_API_KEY)
+import { claudeCli } from "planwright-e2e";           // your logged-in Claude Code CLI (`claude -p`), no API key
+import { openai } from "planwright-e2e/llm/openai";   // npm i openai
+import { google } from "planwright-e2e/llm/google";   // npm i @google/genai (Gemini API or Vertex)
 
 llm: anthropic({ model: "claude-opus-5-5", effort: "medium" })
 llm: claudeCli()                                        // or claudeCli({ model: "opus" })

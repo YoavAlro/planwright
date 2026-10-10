@@ -89,7 +89,7 @@ export interface PlanwrightConfig {
     minConfidence?: number;
     /**
      * Who decides semantic `Then` steps stored as `judge`. Default: the LLM.
-     * E.g. layaJudge() from "planwright/judge/laya" for a local decision model.
+     * E.g. layaJudge() from "planwright-e2e/judge/laya" for a local decision model.
      */
     using?: Judge;
   };

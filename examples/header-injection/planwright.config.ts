@@ -1,4 +1,4 @@
-import { defineConfig } from "planwright";
+import { defineConfig } from "planwright-e2e";
 
 /**
  * Environments behind a bot-protection layer or an internal gateway often

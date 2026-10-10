@@ -18,13 +18,13 @@
     "outDir": "dist",
     "rootDir": ".",
     "paths": {
-      "planwright": [
+      "planwright-e2e": [
         "./src/index.ts"
       ],
-      "planwright/judge/laya": [
+      "planwright-e2e/judge/laya": [
         "./src/judge/laya.ts"
       ],
-      "planwright/llm/*": [
+      "planwright-e2e/llm/*": [
         "./src/llm/*.ts"
       ]
     },

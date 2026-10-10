@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 
-import { defineConfig, type ScenarioContext } from "planwright";
+import { defineConfig, type ScenarioContext } from "planwright-e2e";
 
 /**
  * Generic auth adapter: log in through the app's own form once, save the

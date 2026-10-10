@@ -1,5 +1,5 @@
-import { anthropic, claudeCli, defineConfig } from "planwright";
-import { layaJudge } from "planwright/judge/laya";
+import { anthropic, claudeCli, defineConfig } from "planwright-e2e";
+import { layaJudge } from "planwright-e2e/judge/laya";
 
 import { startApp, type App } from "./app/server.js";
 import { conversation } from "./judge-state.js";

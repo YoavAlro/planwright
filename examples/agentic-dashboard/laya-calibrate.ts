@@ -10,7 +10,7 @@
  *   node examples/agentic-dashboard/laya-calibrate.ts
  */
 import { chromium } from "playwright";
-import { defaultJudgeQuestion, type SystemOneClient, type SystemOneQuestion } from "planwright";
+import { defaultJudgeQuestion, type SystemOneClient, type SystemOneQuestion } from "planwright-e2e";
 
 import { startApp } from "./app/server.ts";
 

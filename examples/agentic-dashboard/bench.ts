@@ -13,8 +13,8 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { anthropic, claudeCli, resolveConfig, run, type RunResult } from "planwright";
-import { layaJudge } from "planwright/judge/laya";
+import { anthropic, claudeCli, resolveConfig, run, type RunResult } from "planwright-e2e";
+import { layaJudge } from "planwright-e2e/judge/laya";
 
 import { startApp } from "./app/server.ts";
 import { offlineBrain } from "./offline-brain.ts";
