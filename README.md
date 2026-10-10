@@ -1,6 +1,8 @@
-# Planwright
+<p align="center"><img src="docs/logo.svg" alt="planwright logo: a pickle with a robot antenna holding its plan" width="160"></p>
 
-**AI-written end-to-end tests that stop calling the AI once they pass.**
+<h1 align="center">Planwright</h1>
+
+<p align="center"><b>AI-written end-to-end tests that stop calling the AI once they pass.</b></p>
 
 ![planwright replays a committed plan with no LLM calls, re-plans only the two steps a UI redesign broke, then replays again](docs/demo.gif)
 
