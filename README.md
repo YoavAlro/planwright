@@ -4,6 +4,12 @@
 
 <p align="center"><b>AI-written end-to-end tests that stop calling the AI once they pass.</b></p>
 
+```bash
+npm install -D planwright-e2e playwright
+```
+
+The repo and the command (`npx planwright`) are `planwright`; the npm package is `planwright-e2e`, because npm reserves names that close to `playwright`. Setup is in the [Quickstart](#quickstart).
+
 ![planwright replays a committed plan with no LLM calls, re-plans only the two steps a UI redesign broke, then replays again](docs/demo.gif)
 
 <sub>The bundled [example app](examples/agentic-dashboard/README.md) with its offline stand-in model: `npm run example`.</sub>
@@ -40,6 +46,7 @@ features/tasks.feature › Add a task
 
 ## Contents
 
+- [Why not just cache agent actions?](#why-not-just-cache-agent-actions)
 - [Quickstart](#quickstart)
 - [Example: agentic dashboard](examples/agentic-dashboard/README.md)
 - [Results](#results)
@@ -53,6 +60,15 @@ features/tasks.feature › Add a task
 - [Writing good scenarios](#writing-good-scenarios)
 - [Development](#development)
 
+## Why not just cache agent actions?
+
+Replaying recorded agent actions also saves LLM calls. Planwright is built around four differences:
+
+- **Plans are code.** Each `.feature` has a committed `<name>.plan.json`, written byte-stably (fixed key order, no timestamps), so a pull request diff shows exactly what the agent now clicks. A cache kept per machine, or rewritten outside version control, leaves no diff to review.
+- **Drift is a CI gate, not a quiet fallback.** When a step re-plans, the run passes but `--ci` exits 2 and writes `drift-report.md` with the old and new actions, until someone commits the plan. `--frozen` goes further: no LLM for `Given`/`When`, so a stale plan fails.
+- **Infra failures never heal.** A 5xx page, a network error, a failed hook or a spinner that never clears exits 3 and is never re-planned. Healing answers only "the page changed", so an outage can't be hidden by the agent finding another way through.
+- **`Then` steps stay structural.** Assertions compile once into checks (`visible`, `count ≥ n`, text, URL and title patterns) that replay with no LLM, and a pattern can't pin a number seen on the page unless the step text contains it. Only claims that can't be expressed that way are judged by the LLM on every run. When a cached check fails, the LLM judges once: a broken feature fails the scenario, and only a page that still meets the claim gets its checks recompiled, reported as drift.
+
 ## Quickstart
 
 ```bash
@@ -60,8 +76,6 @@ npm install -D planwright-e2e playwright
 npx playwright install chromium
 export ANTHROPIC_API_KEY=...        # default provider: Anthropic, model claude-opus-5-5
 ```
-
-The npm package is `planwright-e2e` (npm reserves names close to `playwright`); the command and the config file are still `planwright`.
 
 `planwright.config.ts`:
 
